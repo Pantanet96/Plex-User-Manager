@@ -11,9 +11,10 @@ A modern web application for managing Plex library sharing with scheduled access
 - 🎯 **Manual Library Sharing**: Easily manage which libraries each user can access
 - ⏰ **Scheduled Access**: Set start and expiration dates for library access
 - 🔄 **Automatic Sync**: Import users and libraries from your Plex server
-- 📅 **Background Scheduler**: Automatically applies access changes based on dates (runs hourly)
+- 📅 **Configurable Scheduler**: Customize scheduler frequency (5 minutes to daily) or run at specific times
 - 🎨 **Modern UI**: Beautiful dark theme with glassmorphism effects
-- 🔐 **Local Authentication**: Secure admin login
+- 🔐 **Local Authentication**: Secure admin login with password change functionality
+- 🔑 **Password Visibility Toggle**: Show/hide passwords with SVG eye icons
 - 📊 **Real-time Updates**: Changes are immediately reflected on Plex
 - 🛡️ **Default Library Protection**: Prevents user removal by maintaining a default library assignment
 
@@ -99,7 +100,20 @@ A modern web application for managing Plex library sharing with scheduled access
 - Set a **Start Date** to grant access beginning at a specific time
 - Set an **Expiration Date** to automatically revoke access after a certain date
 - Leave dates empty for immediate and permanent access
-- The background scheduler runs every hour to apply date-based changes
+- The background scheduler automatically applies date-based changes
+
+### Scheduler Configuration
+
+You can customize how often the scheduler runs:
+
+1. Go to **Settings**
+2. Scroll to **Scheduler Configuration**
+3. Choose between two modes:
+   - **Interval Mode**: Run every X minutes (5-1440 minutes)
+   - **Daily Mode**: Run once per day at a specific time (e.g., 03:00)
+4. Click **Save Settings**
+
+The scheduler will automatically reconfigure without requiring an app restart.
 
 ### Manual Scheduler Trigger
 

@@ -33,6 +33,44 @@
                 </button>
             </div>
         </div>
+
+        <hr style="margin: 2rem 0; border: 1px solid rgba(255,255,255,0.1);">
+
+        <h3>Scheduler Configuration</h3>
+
+        <div class="form-group">
+            <label>Scheduler Type</label>
+            <div class="scheduler-type-group">
+                <label class="scheduler-type-label">
+                    <input type="radio" name="scheduler_type" value="interval" {% if scheduler_type=='interval'
+                        %}checked{% endif %} onchange="toggleSchedulerFields()">
+                    <span>Interval (every X minutes)</span>
+                </label>
+                <label class="scheduler-type-label">
+                    <input type="radio" name="scheduler_type" value="daily" {% if scheduler_type=='daily' %}checked{%
+                        endif %} onchange="toggleSchedulerFields()">
+                    <span>Daily (at specific time)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group" id="interval_field">
+            <label for="scheduler_interval_minutes">Interval (minutes)</label>
+            <input type="number" id="scheduler_interval_minutes" name="scheduler_interval_minutes"
+                value="{{ scheduler_interval_minutes }}" min="5" max="1440" step="5" placeholder="60">
+            <p class="scheduler-help-text">
+                Minimum: 5 minutes, Maximum: 1440 minutes (1 day)
+            </p>
+        </div>
+
+        <div class="form-group" id="daily_field">
+            <label for="scheduler_daily_time">Daily Execution Time</label>
+            <input type="time" id="scheduler_daily_time" name="scheduler_daily_time" value="{{ scheduler_daily_time }}">
+            <p class="scheduler-help-text">
+                Scheduler will run once per day at this time
+            </p>
+        </div>
+
         <button type="submit">Save Settings</button>
     </form>
 
@@ -101,5 +139,24 @@
         const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
         input.setAttribute('type', type);
     }
+
+    function toggleSchedulerFields() {
+        const schedulerType = document.querySelector('input[name="scheduler_type"]:checked').value;
+        const intervalField = document.getElementById('interval_field');
+        const dailyField = document.getElementById('daily_field');
+
+        if (schedulerType === 'interval') {
+            intervalField.style.display = 'block';
+            dailyField.style.display = 'none';
+        } else {
+            intervalField.style.display = 'none';
+            dailyField.style.display = 'block';
+        }
+    }
+
+    // Initialize field visibility on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        toggleSchedulerFields();
+    });
 </script>
 {% endblock %}

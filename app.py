@@ -33,7 +33,53 @@ def run_schedule():
         from plex_service import check_schedules
         check_schedules()
 
-scheduler.add_job(func=run_schedule, trigger="interval", minutes=60, id='access_check_job') # Run every hour
+def get_scheduler_settings():
+    """Get scheduler settings from database with defaults"""
+    with app.app_context():
+        from models import Settings
+        
+        scheduler_type = Settings.query.filter_by(key='scheduler_type').first()
+        interval_minutes = Settings.query.filter_by(key='scheduler_interval_minutes').first()
+        daily_time = Settings.query.filter_by(key='scheduler_daily_time').first()
+        
+        return {
+            'type': scheduler_type.value if scheduler_type else 'interval',
+            'interval_minutes': int(interval_minutes.value) if interval_minutes else 60,
+            'daily_time': daily_time.value if daily_time else '03:00'
+        }
+
+def configure_scheduler():
+    """Configure scheduler based on database settings"""
+    settings = get_scheduler_settings()
+    
+    # Remove existing job if it exists
+    if scheduler.get_job('access_check_job'):
+        scheduler.remove_job('access_check_job')
+    
+    # Add job based on type
+    if settings['type'] == 'daily':
+        # Parse time string (HH:MM)
+        hour, minute = map(int, settings['daily_time'].split(':'))
+        scheduler.add_job(
+            func=run_schedule,
+            trigger='cron',
+            hour=hour,
+            minute=minute,
+            id='access_check_job'
+        )
+        app.logger.info(f"Scheduler configured for daily execution at {settings['daily_time']}")
+    else:
+        # Interval mode
+        scheduler.add_job(
+            func=run_schedule,
+            trigger='interval',
+            minutes=settings['interval_minutes'],
+            id='access_check_job'
+        )
+        app.logger.info(f"Scheduler configured for interval execution every {settings['interval_minutes']} minutes")
+
+# Initialize scheduler with settings
+configure_scheduler()
 scheduler.start()
 
 from models import User, Settings, PlexUser, Library, Share
@@ -89,8 +135,11 @@ def settings():
     if request.method == 'POST':
         plex_url = request.form.get('plex_url')
         plex_token = request.form.get('plex_token')
+        scheduler_type = request.form.get('scheduler_type')
+        scheduler_interval = request.form.get('scheduler_interval_minutes')
+        scheduler_time = request.form.get('scheduler_daily_time')
         
-        # Save or update settings
+        # Save or update Plex settings
         url_setting = Settings.query.filter_by(key='plex_url').first()
         if not url_setting:
             url_setting = Settings(key='plex_url')
@@ -103,15 +152,45 @@ def settings():
             db.session.add(token_setting)
         token_setting.value = plex_token
         
+        # Save scheduler settings
+        type_setting = Settings.query.filter_by(key='scheduler_type').first()
+        if not type_setting:
+            type_setting = Settings(key='scheduler_type')
+            db.session.add(type_setting)
+        type_setting.value = scheduler_type
+        
+        interval_setting = Settings.query.filter_by(key='scheduler_interval_minutes').first()
+        if not interval_setting:
+            interval_setting = Settings(key='scheduler_interval_minutes')
+            db.session.add(interval_setting)
+        interval_setting.value = scheduler_interval
+        
+        time_setting = Settings.query.filter_by(key='scheduler_daily_time').first()
+        if not time_setting:
+            time_setting = Settings(key='scheduler_daily_time')
+            db.session.add(time_setting)
+        time_setting.value = scheduler_time
+        
         db.session.commit()
+        
+        # Reconfigure scheduler with new settings
+        configure_scheduler()
+        
         flash('Settings updated successfully', 'success')
         
+    # Get current settings
     plex_url = Settings.query.filter_by(key='plex_url').first()
     plex_token = Settings.query.filter_by(key='plex_token').first()
     
+    # Get scheduler settings with defaults
+    scheduler_settings = get_scheduler_settings()
+    
     return render_template('settings.html', 
                          plex_url=plex_url.value if plex_url else '',
-                         plex_token=plex_token.value if plex_token else '')
+                         plex_token=plex_token.value if plex_token else '',
+                         scheduler_type=scheduler_settings['type'],
+                         scheduler_interval_minutes=scheduler_settings['interval_minutes'],
+                         scheduler_daily_time=scheduler_settings['daily_time'])
 
 @app.route('/change_password', methods=['POST'])
 @login_required

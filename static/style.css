@@ -109,7 +109,9 @@ label {
 
 input[type="text"],
 input[type="password"],
-input[type="date"] {
+input[type="date"],
+input[type="number"],
+input[type="time"] {
     width: 100%;
     padding: 0.8rem;
     background: rgba(0, 0, 0, 0.2);
@@ -122,7 +124,9 @@ input[type="date"] {
 
 input[type="text"]:focus,
 input[type="password"]:focus,
-input[type="date"]:focus {
+input[type="date"]:focus,
+input[type="number"]:focus,
+input[type="time"]:focus {
     outline: none;
     border-color: var(--primary-color);
 }
@@ -196,6 +200,40 @@ button:active {
 
 .btn-toggle-password:active {
     transform: scale(0.95);
+}
+
+/* Scheduler Configuration */
+.scheduler-type-group {
+    display: flex;
+    gap: 2rem;
+    margin-top: 0.5rem;
+}
+
+.scheduler-type-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+}
+
+.scheduler-type-label:hover {
+    color: var(--text-primary);
+}
+
+.scheduler-type-label input[type="radio"] {
+    width: auto;
+    margin: 0;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.scheduler-help-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.3rem;
+    opacity: 0.8;
 }
 
 /* Tables */
