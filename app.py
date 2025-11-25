@@ -7,15 +7,35 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=1)
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
+# Configure logging with rotation
+# Remove any existing handlers
+logging.getLogger().handlers = []
+
+# Create formatters
+file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_formatter = logging.Formatter('%(levelname)s: %(message)s')
+
+# App log handler (INFO and above) - 10MB max, 5 backups
+app_handler = RotatingFileHandler('app.log', maxBytes=10*1024*1024, backupCount=5)
+app_handler.setLevel(logging.INFO)
+app_handler.setFormatter(file_formatter)
+
+# Error log handler (ERROR only) - 10MB max, 5 backups
+error_handler = RotatingFileHandler('error.log', maxBytes=10*1024*1024, backupCount=5)
+error_handler.setLevel(logging.ERROR)
+error_handler.setFormatter(file_formatter)
+
+# Console handler for development
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(console_formatter)
+
+# Configure root logger
+logging.basicConfig(level=logging.INFO, handlers=[app_handler, error_handler, console_handler])
 
 app = Flask(__name__)
-app.logger.addHandler(handler)
+app.logger.addHandler(app_handler)
+app.logger.addHandler(error_handler)
 app.logger.setLevel(logging.INFO)
 
 app.config['SECRET_KEY'] = 'your_secret_key_here' # TODO: Change this to a secure random key
@@ -294,6 +314,125 @@ def user_details(user_id):
         return redirect(url_for('user_details', user_id=user.id))
         
     return render_template('user_details.html', user=user, libraries=libraries)
+
+
+# Log Management Helper Functions
+def parse_log_file(filename, max_lines=100, level_filter=None):
+    """Parse log file and return recent entries with optional level filtering"""
+    import os
+    from collections import deque
+    
+    if not os.path.exists(filename):
+        return []
+    
+    log_entries = deque(maxlen=max_lines)
+    
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Apply level filter if specified
+                if level_filter:
+                    if f' - {level_filter} - ' not in line:
+                        continue
+                
+                # Parse log line
+                try:
+                    parts = line.split(' - ', 3)
+                    if len(parts) >= 4:
+                        timestamp = parts[0]
+                        logger_name = parts[1]
+                        level = parts[2]
+                        message = parts[3]
+                        
+                        log_entries.append({
+                            'timestamp': timestamp,
+                            'logger': logger_name,
+                            'level': level,
+                            'message': message
+                        })
+                    else:
+                        # Fallback for malformed lines
+                        log_entries.append({
+                            'timestamp': '',
+                            'logger': '',
+                            'level': 'UNKNOWN',
+                            'message': line
+                        })
+                except Exception:
+                    # If parsing fails, add as raw message
+                    log_entries.append({
+                        'timestamp': '',
+                        'logger': '',
+                        'level': 'UNKNOWN',
+                        'message': line
+                    })
+        
+        return list(log_entries)
+    except Exception as e:
+        app.logger.error(f'Error reading log file {filename}: {str(e)}')
+        return []
+
+
+@app.route('/api/logs', methods=['GET'])
+@login_required
+def get_logs():
+    """API endpoint to get recent log entries"""
+    from flask import jsonify
+    
+    # Get query parameters
+    log_file = request.args.get('file', 'app')  # 'app' or 'error'
+    level = request.args.get('level', None)  # Filter by level
+    lines = request.args.get('lines', 100, type=int)  # Number of lines
+    
+    # Validate parameters
+    if log_file not in ['app', 'error']:
+        return jsonify({'error': 'Invalid log file. Use "app" or "error"'}), 400
+    
+    if lines < 1 or lines > 1000:
+        return jsonify({'error': 'Lines must be between 1 and 1000'}), 400
+    
+    if level and level not in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+        return jsonify({'error': 'Invalid log level'}), 400
+    
+    # Get log filename
+    filename = f'{log_file}.log'
+    
+    # Parse and return logs
+    logs = parse_log_file(filename, max_lines=lines, level_filter=level)
+    
+    return jsonify({
+        'file': log_file,
+        'level_filter': level,
+        'count': len(logs),
+        'logs': logs
+    })
+
+
+@app.route('/api/logs/download', methods=['GET'])
+@login_required
+def download_logs():
+    """API endpoint to download complete log file"""
+    from flask import send_file
+    import os
+    
+    log_file = request.args.get('file', 'app')
+    
+    if log_file not in ['app', 'error']:
+        flash('Invalid log file', 'error')
+        return redirect(url_for('settings'))
+    
+    filename = f'{log_file}.log'
+    
+    if not os.path.exists(filename):
+        flash(f'Log file {filename} not found', 'error')
+        return redirect(url_for('settings'))
+    
+    return send_file(filename, as_attachment=True, download_name=filename)
+
 
 
 if __name__ == '__main__':

@@ -123,6 +123,48 @@
 
     <hr style="margin: 3rem 0; border: 1px solid rgba(255,255,255,0.1);">
 
+    <!-- Application Logs -->
+    <h3>Application Logs</h3>
+    <div class="log-viewer-container">
+        <div class="log-controls">
+            <div class="form-group">
+                <label for="log_file">Log File</label>
+                <select id="log_file" onchange="fetchLogs()">
+                    <option value="app">Application Logs</option>
+                    <option value="error">Error Logs</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="log_level">Filter by Level</label>
+                <select id="log_level" onchange="fetchLogs()">
+                    <option value="">All Levels</option>
+                    <option value="DEBUG">DEBUG</option>
+                    <option value="INFO">INFO</option>
+                    <option value="WARNING">WARNING</option>
+                    <option value="ERROR">ERROR</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="log_lines">Number of Lines</label>
+                <input type="number" id="log_lines" value="100" min="10" max="1000" step="10" onchange="fetchLogs()">
+            </div>
+        </div>
+
+        <div class="log-controls-row">
+            <label>
+                <input type="checkbox" id="auto_refresh" checked onchange="toggleAutoRefresh()">
+                <span>Auto-refresh (every 5 seconds)</span>
+            </label>
+            <button type="button" class="btn-download" onclick="downloadLogs()">Download Log File</button>
+        </div>
+
+        <div id="log_viewer" class="log-viewer">
+            <div class="log-loading">Loading logs...</div>
+        </div>
+    </div>
+
+    <hr style="margin: 3rem 0; border: 1px solid rgba(255,255,255,0.1);">
+
     <!-- Debug Tools -->
     <h3>Debug Tools</h3>
     <form method="POST" action="{{ url_for('run_scheduler') }}">
@@ -157,6 +199,92 @@
     // Initialize field visibility on page load
     document.addEventListener('DOMContentLoaded', function () {
         toggleSchedulerFields();
+        fetchLogs(); // Load logs on page load
     });
+
+    // Log Viewer Functions
+    let autoRefreshInterval = null;
+
+    async function fetchLogs() {
+        const logFile = document.getElementById('log_file').value;
+        const logLevel = document.getElementById('log_level').value;
+        const logLines = document.getElementById('log_lines').value;
+        const logViewer = document.getElementById('log_viewer');
+
+        // Build API URL
+        let url = `/api/logs?file=${logFile}&lines=${logLines}`;
+        if (logLevel) {
+            url += `&level=${logLevel}`;
+        }
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Failed to fetch logs');
+            }
+
+            const data = await response.json();
+            displayLogs(data.logs);
+        } catch (error) {
+            logViewer.innerHTML = `<div class="log-empty">Error loading logs: ${error.message}</div>`;
+        }
+    }
+
+    function displayLogs(logs) {
+        const logViewer = document.getElementById('log_viewer');
+
+        if (!logs || logs.length === 0) {
+            logViewer.innerHTML = '<div class="log-empty">No logs found</div>';
+            return;
+        }
+
+        let html = '';
+        logs.forEach(log => {
+            const levelClass = `level-${log.level}`;
+            html += `
+                <div class="log-entry ${levelClass}">
+                    <span class="log-timestamp">${log.timestamp}</span>
+                    <span class="log-logger">[${log.logger}]</span>
+                    <span class="log-level">${log.level}</span>
+                    <span class="log-message">${escapeHtml(log.message)}</span>
+                </div>
+            `;
+        });
+
+        logViewer.innerHTML = html;
+        // Scroll to bottom
+        logViewer.scrollTop = logViewer.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function toggleAutoRefresh() {
+        const autoRefresh = document.getElementById('auto_refresh').checked;
+
+        if (autoRefresh) {
+            // Start auto-refresh every 5 seconds
+            autoRefreshInterval = setInterval(fetchLogs, 5000);
+        } else {
+            // Stop auto-refresh
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+    }
+
+    function downloadLogs() {
+        const logFile = document.getElementById('log_file').value;
+        window.location.href = `/api/logs/download?file=${logFile}`;
+    }
+
+    // Start auto-refresh if checkbox is checked
+    if (document.getElementById('auto_refresh').checked) {
+        autoRefreshInterval = setInterval(fetchLogs, 5000);
+    }
 </script>
 {% endblock %}
