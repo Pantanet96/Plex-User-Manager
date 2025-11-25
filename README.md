@@ -12,6 +12,7 @@ A modern web application for managing Plex library sharing with scheduled access
 - ⏰ **Scheduled Access**: Set start and expiration dates for library access
 - 🔄 **Automatic Sync**: Import users and libraries from your Plex server
 - 📅 **Configurable Scheduler**: Customize scheduler frequency (5 minutes to daily) or run at specific times
+- 📝 **Log Management**: Real-time log viewing with filtering, auto-refresh, and download capabilities
 - 🎨 **Modern UI**: Beautiful dark theme with glassmorphism effects
 - 🔐 **Local Authentication**: Secure admin login with password change functionality
 - 🔑 **Password Visibility Toggle**: Show/hide passwords with SVG eye icons
@@ -117,10 +118,27 @@ The scheduler will automatically reconfigure without requiring an app restart.
 
 ### Manual Scheduler Trigger
 
+
 For testing purposes, you can manually trigger the scheduler:
 1. Go to Settings
 2. Scroll to "Debug Tools"
 3. Click "Run Scheduler Now"
+
+### Log Management
+
+View and monitor application logs directly from the Settings page:
+
+1. Go to **Settings**
+2. Scroll to **Application Logs**
+3. Select log file:
+   - **Application Logs**: All application activity (INFO, WARNING, ERROR)
+   - **Error Logs**: Only error messages
+4. Filter by log level (DEBUG, INFO, WARNING, ERROR)
+5. Adjust number of lines to display (10-1000)
+6. Enable/disable auto-refresh (updates every 5 seconds)
+7. Download complete log files for offline analysis
+
+**Log Rotation**: Log files are automatically rotated when they reach 10MB, keeping the last 5 backup files (50MB total per log type).
 
 ## Security Considerations
 
