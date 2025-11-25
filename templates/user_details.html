@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="user-details-container">
+    <h2>Manage Access for {{ user.username }}</h2>
+    <a href="{{ url_for('dashboard') }}" class="back-link">&larr; Back to Dashboard</a>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <p class="{{ category }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <table class="libraries-table">
+            <thead>
+                <tr>
+                    <th>Library</th>
+                    <th>Access</th>
+                    <th>Start Date</th>
+                    <th>Expiration Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lib in libraries %}
+                {% set share = user.shares | selectattr("library_id", "equalto", lib.id) | first %}
+                <tr>
+                    <td>{{ lib.title }}</td>
+                    <td>
+                        {% if lib.title.lower() == 'default' %}
+                        <input type="checkbox" name="library_{{ lib.id }}" checked disabled>
+                        <input type="hidden" name="library_{{ lib.id }}" value="on">
+                        {% else %}
+                        <input type="checkbox" name="library_{{ lib.id }}" {% if share and share.is_active %}checked{%
+                            endif %}>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="date-input-group">
+                            <input type="date" name="start_date_{{ lib.id }}" id="start_date_{{ lib.id }}"
+                                value="{{ share.start_date.strftime('%Y-%m-%d') if share and share.start_date else '' }}">
+                            <button type="button" class="btn-clear"
+                                onclick="document.getElementById('start_date_{{ lib.id }}').value = ''">✕</button>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="date-input-group">
+                            <input type="date" name="expiration_date_{{ lib.id }}" id="expiration_date_{{ lib.id }}"
+                                value="{{ share.expiration_date.strftime('%Y-%m-%d') if share and share.expiration_date else '' }}">
+                            <button type="button" class="btn-clear"
+                                onclick="document.getElementById('expiration_date_{{ lib.id }}').value = ''">✕</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn-save" style="margin-top: 2rem;">Save Changes</button>
+    </form>
+</div>
+{% endblock %}

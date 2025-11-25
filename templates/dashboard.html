@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="header">
+        <h2>Dashboard</h2>
+        <div class="scheduler-info">
+            {% if next_run %}
+            <p>Next auto-update in: <span id="countdown">Calculating...</span></p>
+            <script>
+                const nextRun = new Date("{{ next_run.isoformat() }}").getTime();
+
+                const timer = setInterval(function () {
+                    const now = new Date().getTime();
+                    const distance = nextRun - now;
+
+                    if (distance < 0) {
+                        clearInterval(timer);
+                        document.getElementById("countdown").innerHTML = "Running now...";
+                        setTimeout(() => location.reload(), 5000); // Reload after 5s
+                        return;
+                    }
+
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    document.getElementById("countdown").innerHTML = minutes + "m " + seconds + "s ";
+                }, 1000);
+            </script>
+            {% else %}
+            <p>Scheduler not running</p>
+            {% endif %}
+        </div>
+        <form action="{{ url_for('sync_plex') }}" method="POST">
+            <button type="submit" class="btn-sync">Sync with Plex</button>
+        </form>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <p class="{{ category }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="users-list">
+        <h3>Users</h3>
+        {% if users %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        <a href="{{ url_for('user_details', user_id=user.id) }}" class="btn-details">Manage Access</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No users found. Please sync with Plex.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

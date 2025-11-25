@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="settings-container">
+    <h2>Settings</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <p class="{{ category }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    <form method="POST">
+        <div class="form-group">
+            <label for="plex_url">Plex Server URL</label>
+            <input type="text" id="plex_url" name="plex_url" value="{{ plex_url }}" placeholder="http://localhost:32400"
+                required>
+        </div>
+        <div class="form-group">
+            <label for="plex_token">Plex Authentication Token</label>
+            <input type="password" id="plex_token" name="plex_token" value="{{ plex_token }}" required>
+        </div>
+        <button type="submit">Save Settings</button>
+    </form>
+
+    <hr style="margin: 3rem 0; border: 1px solid rgba(255,255,255,0.1);">
+
+    <h3>Debug Tools</h3>
+    <form method="POST" action="{{ url_for('run_scheduler') }}">
+        <button type="submit" class="btn-debug">Run Scheduler Now</button>
+        <p style="font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">
+            Manually trigger the scheduler to check and apply library access based on start/expiration dates.
+        </p>
+    </form>
+</div>
+{% endblock %}
