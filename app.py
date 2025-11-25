@@ -113,6 +113,31 @@ def settings():
                          plex_url=plex_url.value if plex_url else '',
                          plex_token=plex_token.value if plex_token else '')
 
+@app.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+    
+    if not current_user.check_password(current_password):
+        flash('Incorrect current password', 'error')
+        return redirect(url_for('settings'))
+    
+    if new_password != confirm_password:
+        flash('New passwords do not match', 'error')
+        return redirect(url_for('settings'))
+        
+    if len(new_password) < 4:
+        flash('Password must be at least 4 characters long', 'error')
+        return redirect(url_for('settings'))
+    
+    current_user.set_password(new_password)
+    db.session.commit()
+    
+    flash('Password changed successfully', 'success')
+    return redirect(url_for('settings'))
+
 @app.route('/run_scheduler', methods=['POST'])
 @login_required
 def run_scheduler():
