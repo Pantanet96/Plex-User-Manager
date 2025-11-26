@@ -96,8 +96,9 @@
             <label for="new_password">New Password</label>
             <div class="password-wrapper">
                 <input type="password" id="new_password" name="new_password" minlength="8"
-                    pattern="^(?=.*[!@#$%^&*(),.?&quot;:{}|<>_\-+=\[\]\\\/;~`]).{8,}$"
-                    title="Password must be at least 8 characters and contain at least one special character" required>
+                    pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?&quot;:{}|<>_\-+=\[\]\\\/;~`]).{8,}$"
+                    title="Password must be at least 8 characters and contain at least one uppercase letter, one number, and one special character"
+                    required>
                 <button type="button" class="btn-toggle-password" onclick="togglePassword('new_password')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -107,8 +108,8 @@
                 </button>
             </div>
             <p class="scheduler-help-text">
-                Must be at least 8 characters and include at least one special character (!@#$%^&*(),.?":{}|<>
-                    _-+=[]\/;~`)
+                Must be at least 8 characters and include: one uppercase letter (A-Z), one number (0-9), and one special
+                character (!@#$%^&*(),.?":{}|<>_-+=[]\/;~`)
             </p>
         </div>
         <div class="form-group">

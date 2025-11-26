@@ -216,6 +216,8 @@ def validate_password(password):
     """
     Validate password meets security requirements:
     - At least 8 characters
+    - At least one uppercase letter
+    - At least one number
     - At least one special character
     Returns (is_valid, error_message)
     """
@@ -223,6 +225,14 @@ def validate_password(password):
     
     if len(password) < 8:
         return False, 'Password must be at least 8 characters long'
+    
+    # Check for at least one uppercase letter
+    if not re.search(r'[A-Z]', password):
+        return False, 'Password must contain at least one uppercase letter'
+    
+    # Check for at least one number
+    if not re.search(r'[0-9]', password):
+        return False, 'Password must contain at least one number'
     
     # Check for at least one special character
     special_chars = r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/;~`]'

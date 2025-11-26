@@ -148,6 +148,8 @@ View and monitor application logs directly from the Settings page:
    - The default credentials (`admin`/`admin`) should be changed immediately
    - New passwords must meet security requirements:
      - Minimum 8 characters
+     - At least one uppercase letter (A-Z)
+     - At least one number (0-9)
      - At least one special character (!@#$%^&*(),.?":{}|<>_-+=[]\/;~`)
 
 2. **Update the SECRET_KEY**
