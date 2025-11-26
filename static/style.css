@@ -537,7 +537,12 @@ tr:hover td {
     font-style: italic;
 }
 
-.log-loading {}
+.log-loading {
+    text-align: center;
+    color: var(--primary-color);
+    padding: 2rem;
+}
+
 
 .flash-messages .success,
 .flash-messages .info {
