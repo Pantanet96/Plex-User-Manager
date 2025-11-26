@@ -36,30 +36,39 @@
                         <input type="hidden" name="library_{{ lib.id }}" value="on">
                         {% else %}
                         <input type="checkbox" name="library_{{ lib.id }}" {% if share and share.is_active %}checked{%
-                            endif %}>
+                            endif %} {% if not current_user.can_edit_libraries() %}disabled{% endif %}>
                         {% endif %}
                     </td>
                     <td>
                         <div class="date-input-group">
                             <input type="date" name="start_date_{{ lib.id }}" id="start_date_{{ lib.id }}"
-                                value="{{ share.start_date.strftime('%Y-%m-%d') if share and share.start_date else '' }}">
+                                value="{{ share.start_date.strftime('%Y-%m-%d') if share and share.start_date else '' }}"
+                                {% if not current_user.can_edit_libraries() %}disabled{% endif %}>
+                            {% if current_user.can_edit_libraries() %}
                             <button type="button" class="btn-clear"
                                 onclick="document.getElementById('start_date_{{ lib.id }}').value = ''">✕</button>
+                            {% endif %}
                         </div>
                     </td>
                     <td>
                         <div class="date-input-group">
                             <input type="date" name="expiration_date_{{ lib.id }}" id="expiration_date_{{ lib.id }}"
-                                value="{{ share.expiration_date.strftime('%Y-%m-%d') if share and share.expiration_date else '' }}">
+                                value="{{ share.expiration_date.strftime('%Y-%m-%d') if share and share.expiration_date else '' }}"
+                                {% if not current_user.can_edit_libraries() %}disabled{% endif %}>
+                            {% if current_user.can_edit_libraries() %}
                             <button type="button" class="btn-clear"
                                 onclick="document.getElementById('expiration_date_{{ lib.id }}').value = ''">✕</button>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        {% if current_user.can_edit_libraries() %}
         <button type="submit" class="btn-save" style="margin-top: 2rem;">Save Changes</button>
+        {% endif %}
     </form>
 </div>
 {% endblock %}

@@ -5,15 +5,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plex Manager</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Plex Manager</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
 
 <body>
     <nav>
         <h1><a href="{{ url_for('dashboard') }}" style="color: inherit; text-decoration: none;">Plex Manager</a></h1>
         <div>
             {% if current_user.is_authenticated %}
+            <span class="user-info">{{ current_user.username }} <span class="role-badge role-{{ current_user.role }}">{{
+                    current_user.role }}</span></span>
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            {% if current_user.is_admin() %}
+            <a href="{{ url_for('users') }}">Users</a>
+            {% endif %}
             <a href="{{ url_for('settings') }}">Settings</a>
             <a href="{{ url_for('logout') }}">Logout</a>
             {% endif %}

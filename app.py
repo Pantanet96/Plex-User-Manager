@@ -46,6 +46,47 @@ db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+# Role-based access control decorators
+from functools import wraps
+from flask import abort, flash, redirect, url_for
+from flask_login import current_user
+
+def admin_required(f):
+    """Decorator for admin-only routes"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        if not current_user.is_admin():
+            flash('Access denied. Admin privileges required.', 'error')
+            app.logger.warning(f'Unauthorized access attempt by {current_user.username} to admin route: {f.__name__}')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def moderator_required(f):
+    """Decorator for moderator+ routes (moderator and admin)"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        if not current_user.is_moderator():
+            flash('Access denied. Moderator privileges required.', 'error')
+            app.logger.warning(f'Unauthorized access attempt by {current_user.username} to moderator route: {f.__name__}')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def auditor_required(f):
+    """Decorator for all authenticated users (auditor+)"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        # All authenticated users can access auditor routes
+        return f(*args, **kwargs)
+    return decorated_function
+
 scheduler = BackgroundScheduler()
 
 def run_schedule():
@@ -153,6 +194,11 @@ def dashboard():
 @login_required
 def settings():
     if request.method == 'POST':
+        # Check for admin privileges for settings update
+        if not current_user.is_admin():
+            flash('Access denied. Admin privileges required to change settings.', 'error')
+            return redirect(url_for('settings'))
+            
         plex_url = request.form.get('plex_url')
         plex_token = request.form.get('plex_token')
         scheduler_type = request.form.get('scheduler_type')
@@ -237,7 +283,7 @@ def validate_password(password):
     # Check for at least one special character
     special_chars = r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/;~`]'
     if not re.search(special_chars, password):
-        return False, 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>_-+=[]\\\/;~`)'
+        return False, 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>_-+=[]\\/;~`)'
     
     return True, ''
 
@@ -269,7 +315,7 @@ def change_password():
     return redirect(url_for('settings'))
 
 @app.route('/run_scheduler', methods=['POST'])
-@login_required
+@admin_required
 def run_scheduler():
     """Manual trigger for scheduler - for debugging purposes"""
     from plex_service import check_schedules
@@ -281,7 +327,7 @@ def run_scheduler():
     return redirect(url_for('settings'))
 
 @app.route('/sync_plex', methods=['POST'])
-@login_required
+@moderator_required
 def sync_plex():
     from plex_service import sync_plex_data
     success, message = sync_plex_data()
@@ -292,12 +338,16 @@ def sync_plex():
     return redirect(url_for('dashboard'))
 
 @app.route('/user/<int:user_id>', methods=['GET', 'POST'])
-@login_required
+@auditor_required
 def user_details(user_id):
     user = PlexUser.query.get_or_404(user_id)
     libraries = Library.query.all()
     
     if request.method == 'POST':
+        if not current_user.can_edit_libraries():
+            flash('Access denied. Moderator privileges required to edit access.', 'error')
+            return redirect(url_for('user_details', user_id=user.id))
+            
         from plex_service import update_user_access
         from datetime import datetime
         
@@ -409,7 +459,7 @@ def parse_log_file(filename, max_lines=100, level_filter=None):
 
 
 @app.route('/api/logs', methods=['GET'])
-@login_required
+@auditor_required
 def get_logs():
     """API endpoint to get recent log entries"""
     from flask import jsonify
@@ -444,7 +494,7 @@ def get_logs():
 
 
 @app.route('/api/logs/download', methods=['GET'])
-@login_required
+@admin_required
 def download_logs():
     """API endpoint to download complete log file"""
     from flask import send_file
@@ -465,6 +515,91 @@ def download_logs():
     return send_file(filename, as_attachment=True, download_name=filename)
 
 
+
+
+@app.route('/users')
+@admin_required
+def users():
+    """User management page"""
+    all_users = User.query.all()
+    return render_template('users.html', users=all_users)
+
+@app.route('/users/create', methods=['POST'])
+@admin_required
+def create_user():
+    """Create a new user"""
+    username = request.form.get('username')
+    password = request.form.get('password')
+    role = request.form.get('role')
+    
+    if User.query.filter_by(username=username).first():
+        flash('Username already exists', 'error')
+        return redirect(url_for('users'))
+    
+    # Validate password
+    is_valid, error_message = validate_password(password)
+    if not is_valid:
+        flash(error_message, 'error')
+        return redirect(url_for('users'))
+    
+    # Validate role
+    if role not in User.ROLES:
+        flash('Invalid role', 'error')
+        return redirect(url_for('users'))
+    
+    new_user = User(username=username, role=role)
+    new_user.set_password(password)
+    db.session.add(new_user)
+    db.session.commit()
+    
+    flash(f'User {username} created successfully', 'success')
+    return redirect(url_for('users'))
+
+@app.route('/users/<int:user_id>/edit', methods=['POST'])
+@admin_required
+def edit_user(user_id):
+    """Edit user role or password"""
+    user = User.query.get_or_404(user_id)
+    
+    # Prevent editing self role (to avoid locking self out)
+    if user.id == current_user.id:
+        flash('You cannot edit your own role from here. Use Settings to change password.', 'warning')
+        return redirect(url_for('users'))
+        
+    role = request.form.get('role')
+    password = request.form.get('password')
+    
+    if role and role in User.ROLES:
+        user.role = role
+        
+    if password:
+        # Validate password
+        is_valid, error_message = validate_password(password)
+        if not is_valid:
+            flash(error_message, 'error')
+            return redirect(url_for('users'))
+        user.set_password(password)
+        
+    db.session.commit()
+    flash(f'User {user.username} updated successfully', 'success')
+    return redirect(url_for('users'))
+
+@app.route('/users/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    """Delete a user"""
+    user = User.query.get_or_404(user_id)
+    
+    # Prevent deleting self
+    if user.id == current_user.id:
+        flash('You cannot delete yourself', 'error')
+        return redirect(url_for('users'))
+    
+    db.session.delete(user)
+    db.session.commit()
+    
+    flash(f'User {user.username} deleted successfully', 'success')
+    return redirect(url_for('users'))
 
 if __name__ == '__main__':
     with app.app_context():

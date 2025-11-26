@@ -18,6 +18,8 @@ A modern web application for managing Plex library sharing with scheduled access
 - 🔑 **Password Visibility Toggle**: Show/hide passwords with SVG eye icons
 - 📊 **Real-time Updates**: Changes are immediately reflected on Plex
 - 🛡️ **Default Library Protection**: Prevents user removal by maintaining a default library assignment
+- 👥 **Role-Based Access Control**: Multi-user support with Admin, Moderator, and Auditor roles
+
 
 ## Screenshots
 
@@ -62,7 +64,7 @@ A modern web application for managing Plex library sharing with scheduled access
    ```bash
    python init_db.py
    ```
-   This creates the SQLite database and a default admin user (`admin`/`admin`).
+   This creates the SQLite database and default users.
 
 ## Configuration
 
@@ -73,7 +75,10 @@ A modern web application for managing Plex library sharing with scheduled access
 
 2. **Access the web interface**
    - Open your browser and navigate to `http://127.0.0.1:5000`
-   - Login with default credentials: `admin` / `admin`
+   - Login with default credentials:
+     - **Admin**: `admin` / `Admin123!`
+     - **Moderator**: `moderator` / `Mod123!`
+     - **Auditor**: `auditor` / `Audit123!`
 
 3. **Configure Plex settings**
    - Go to Settings
@@ -84,6 +89,25 @@ A modern web application for managing Plex library sharing with scheduled access
 4. **Sync with Plex**
    - Go to Dashboard
    - Click "Sync with Plex" to import users and libraries
+
+## Multi-User & Roles
+
+The application supports three distinct user roles:
+
+1. **Admin** 🔴
+   - Full access to all features
+   - Manage application settings (Plex connection, Scheduler)
+   - Manage users (Create, Edit, Delete)
+   - View and download logs
+
+2. **Moderator** 🔵
+   - Manage Plex libraries and user access
+   - Sync with Plex
+   - Cannot access Settings or User Management
+
+3. **Auditor** ⚪
+   - Read-only access to Dashboard and Logs
+   - Cannot make any changes
 
 ## Usage
 
