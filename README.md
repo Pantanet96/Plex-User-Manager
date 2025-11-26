@@ -146,6 +146,9 @@ View and monitor application logs directly from the Settings page:
 
 1. **Change the default admin password**
    - The default credentials (`admin`/`admin`) should be changed immediately
+   - New passwords must meet security requirements:
+     - Minimum 8 characters
+     - At least one special character (!@#$%^&*(),.?":{}|<>_-+=[]\/;~`)
 
 2. **Update the SECRET_KEY**
    - In `app.py`, replace `your_secret_key_here` with a secure random key:

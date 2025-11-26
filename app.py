@@ -212,6 +212,25 @@ def settings():
                          scheduler_interval_minutes=scheduler_settings['interval_minutes'],
                          scheduler_daily_time=scheduler_settings['daily_time'])
 
+def validate_password(password):
+    """
+    Validate password meets security requirements:
+    - At least 8 characters
+    - At least one special character
+    Returns (is_valid, error_message)
+    """
+    import re
+    
+    if len(password) < 8:
+        return False, 'Password must be at least 8 characters long'
+    
+    # Check for at least one special character
+    special_chars = r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/;~`]'
+    if not re.search(special_chars, password):
+        return False, 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>_-+=[]\\\/;~`)'
+    
+    return True, ''
+
 @app.route('/change_password', methods=['POST'])
 @login_required
 def change_password():
@@ -226,9 +245,11 @@ def change_password():
     if new_password != confirm_password:
         flash('New passwords do not match', 'error')
         return redirect(url_for('settings'))
-        
-    if len(new_password) < 4:
-        flash('Password must be at least 4 characters long', 'error')
+    
+    # Validate password strength
+    is_valid, error_message = validate_password(new_password)
+    if not is_valid:
+        flash(error_message, 'error')
         return redirect(url_for('settings'))
     
     current_user.set_password(new_password)
