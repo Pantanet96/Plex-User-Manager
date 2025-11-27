@@ -6,38 +6,20 @@ def init_db():
     with app.app_context():
         db.create_all()
         
-        # Create default users if they don't exist
-        users_created = []
-        
-        # Admin user
+        # Create default admin user if it doesn't exist
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', role=User.ROLE_ADMIN)
-            admin.set_password('Admin123!')
+            admin.set_password('admin')
             db.session.add(admin)
-            users_created.append('admin (role: admin)')
-        
-        # Moderator user
-        if not User.query.filter_by(username='moderator').first():
-            moderator = User(username='moderator', role=User.ROLE_MODERATOR)
-            moderator.set_password('Mod123!')
-            db.session.add(moderator)
-            users_created.append('moderator (role: moderator)')
-        
-        # Auditor user
-        if not User.query.filter_by(username='auditor').first():
-            auditor = User(username='auditor', role=User.ROLE_AUDITOR)
-            auditor.set_password('Audit123!')
-            db.session.add(auditor)
-            users_created.append('auditor (role: auditor)')
-        
-        if users_created:
             db.session.commit()
-            print("Database initialized. Created users:")
-            for user in users_created:
-                print(f"  - {user}")
-            print("\n⚠️  IMPORTANT: Change these default passwords immediately!")
+            print("Database initialized. Created default admin user:")
+            print("  - Username: admin")
+            print("  - Password: admin")
+            print("  - Role: admin")
+            print("\n⚠️  IMPORTANT: Change the default password immediately!")
         else:
-            print("Database already initialized. All default users exist.")
+            print("Database already initialized. Admin user exists.")
+
 
 if __name__ == '__main__':
     init_db()

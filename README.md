@@ -78,9 +78,10 @@ A modern web application for managing Plex library sharing with scheduled access
 2. **Access the web interface**
    - Open your browser and navigate to `http://127.0.0.1:5000`
    - Login with default credentials:
-     - **Admin**: `admin` / `Admin123!`
-     - **Moderator**: `moderator` / `Mod123!`
-     - **Auditor**: `auditor` / `Audit123!`
+     - **Username**: `admin`
+     - **Password**: `admin`
+     - **Role**: Admin
+   - ⚠️ **Change the default password immediately after first login!**
 
 3. **Configure Plex settings**
    - Go to Settings
