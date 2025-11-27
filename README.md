@@ -19,6 +19,8 @@ A modern web application for managing Plex library sharing with scheduled access
 - 📊 **Real-time Updates**: Changes are immediately reflected on Plex
 - 🛡️ **Default Library Protection**: Prevents user removal by maintaining a default library assignment
 - 👥 **Role-Based Access Control**: Multi-user support with Admin, Moderator, and Auditor roles
+- ⚙️ **Server Configuration**: Customize port and enable HTTPS with self-signed or custom certificates
+- 🔄 **One-Click Restart**: Restart server from UI (Docker-ready with exit code 1)
 
 
 ## Screenshots
@@ -164,6 +166,27 @@ View and monitor application logs directly from the Settings page:
 
 **Log Rotation**: Log files are automatically rotated when they reach 10MB, keeping the last 5 backup files (50MB total per log type).
 
+### Server Configuration
+
+Configure server port and HTTPS settings from the Settings page:
+
+1. Go to **Settings**
+2. Scroll to **Server Configuration**
+3. Configure options:
+   - **Server Port**: Change the default port (5000) to any port between 1024-65535
+   - **Enable HTTPS**: Toggle HTTPS support
+   - **SSL Certificate Type**:
+     - **Self-signed**: Automatically generates a self-signed certificate (for development/testing)
+     - **Custom Certificate**: Upload your own `.crt` and `.key` files (for production)
+4. Click **Save Server Settings**
+5. Click **Restart Server** to apply changes
+
+**Important Notes**:
+- Port and HTTPS changes require a server restart to take effect
+- Self-signed certificates will show browser warnings (normal for development)
+- For production, use valid SSL certificates from a trusted CA
+- In Docker deployments, the restart button triggers a container restart (requires `restart: unless-stopped` policy)
+
 ## Security Considerations
 
 ⚠️ **Important**: Before deploying to production:
@@ -199,6 +222,7 @@ Plex-User-Manager/
 ├── models.py              # Database models
 ├── database.py            # Database initialization
 ├── plex_service.py        # Plex API integration
+├── ssl_utils.py           # SSL certificate generation utilities
 ├── init_db.py             # Database setup script
 ├── requirements.txt       # Python dependencies
 ├── static/
@@ -208,7 +232,8 @@ Plex-User-Manager/
     ├── login.html         # Login page
     ├── dashboard.html     # Main dashboard
     ├── settings.html      # Settings page
-    └── user_details.html  # User management page
+    ├── users.html         # User management page
+    └── user_details.html  # User access management page
 ```
 
 ## Technologies Used

@@ -13,6 +13,67 @@
     {% endif %}
     {% endwith %}
 
+    <!-- Server Configuration -->
+    <h3>Server Configuration</h3>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="server_port">Server Port</label>
+            <input type="number" id="server_port" name="server_port" value="{{ server_port }}" min="1024" max="65535"
+                required>
+            <p class="scheduler-help-text">Default: 5000. Requires restart to apply.</p>
+        </div>
+
+        <div class="form-group">
+            <label class="checkbox-container">
+                <input type="checkbox" id="https_enabled" name="https_enabled" {% if https_enabled %}checked{% endif %}
+                    onchange="toggleSSLFields()">
+                <span class="checkmark"></span>
+                Enable HTTPS
+            </label>
+        </div>
+
+        <div id="ssl_fields" style="display: none;">
+            <div class="form-group">
+                <label>SSL Certificate Type</label>
+                <div class="scheduler-type-group">
+                    <label class="scheduler-type-label">
+                        <input type="radio" name="ssl_type" value="self-signed" {% if ssl_type=='self-signed'
+                            %}checked{% endif %} onchange="toggleSSLUpload()">
+                        <span>Self-signed Certificate (Auto-generated)</span>
+                    </label>
+                    <label class="scheduler-type-label">
+                        <input type="radio" name="ssl_type" value="custom" {% if ssl_type=='custom' %}checked{% endif %}
+                            onchange="toggleSSLUpload()">
+                        <span>Custom Certificate</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="custom_ssl_upload"
+                style="display: none; margin-left: 1.5rem; padding-left: 1rem; border-left: 2px solid rgba(255,255,255,0.1);">
+                <div class="form-group">
+                    <label for="ssl_cert">Certificate File (.crt/.pem)</label>
+                    <input type="file" id="ssl_cert" name="ssl_cert" accept=".crt,.pem">
+                </div>
+                <div class="form-group">
+                    <label for="ssl_key">Private Key File (.key)</label>
+                    <input type="file" id="ssl_key" name="ssl_key" accept=".key">
+                </div>
+            </div>
+        </div>
+
+        <button type="submit">Save Server Settings</button>
+    </form>
+
+    <div style="margin-top: 1rem;">
+        <button type="button" onclick="restartServer()"
+            style="background-color: #dc3545; border-color: #dc3545;">Restart Server</button>
+        <p class="scheduler-help-text">Restart the server to apply configuration changes.</p>
+    </div>
+
+
+    <hr style="margin: 2rem 0; border: 1px solid rgba(255,255,255,0.1);">
+
     <!-- Plex Settings -->
     <form method="POST">
         <div class="form-group">
@@ -203,9 +264,25 @@
         }
     }
 
+    function toggleSSLFields() {
+        const httpsEnabled = document.getElementById('https_enabled').checked;
+        const sslFields = document.getElementById('ssl_fields');
+        sslFields.style.display = httpsEnabled ? 'block' : 'none';
+        if (httpsEnabled) {
+            toggleSSLUpload();
+        }
+    }
+
+    function toggleSSLUpload() {
+        const sslType = document.querySelector('input[name="ssl_type"]:checked').value;
+        const customUpload = document.getElementById('custom_ssl_upload');
+        customUpload.style.display = sslType === 'custom' ? 'block' : 'none';
+    }
+
     // Initialize field visibility on page load
     document.addEventListener('DOMContentLoaded', function () {
         toggleSchedulerFields();
+        toggleSSLFields();
         fetchLogs(); // Load logs on page load
     });
 
@@ -292,6 +369,36 @@
     // Start auto-refresh if checkbox is checked
     if (document.getElementById('auto_refresh').checked) {
         autoRefreshInterval = setInterval(fetchLogs, 5000);
+    }
+
+    async function restartServer() {
+        if (!confirm('Are you sure you want to restart the server? This will interrupt active connections.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/restart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok || response.status === 0) { // status 0 might happen if server dies immediately
+                alert('Server is restarting... The page will reload in 10 seconds.');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 10000);
+            } else {
+                alert('Failed to restart server.');
+            }
+        } catch (error) {
+            // Network error is expected as server dies
+            alert('Server is restarting... The page will reload in 10 seconds.');
+            setTimeout(() => {
+                window.location.reload();
+            }, 10000);
+        }
     }
 </script>
 {% endblock %}

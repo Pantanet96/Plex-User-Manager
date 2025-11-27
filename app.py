@@ -3,6 +3,8 @@ from database import db
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from apscheduler.schedulers.background import BackgroundScheduler
 import os
+import sys
+
 
 import logging
 from logging.handlers import RotatingFileHandler
@@ -87,6 +89,30 @@ def auditor_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.route('/restart', methods=['POST'])
+@login_required
+@admin_required
+def restart_server():
+    """Restarts the application by exiting with code 1."""
+    try:
+        app.logger.info('Restart requested by user. Exiting with code 1...')
+        flash('Server is restarting...', 'info')
+        
+        # Exit with code 1 to signal that a restart is needed
+        # In Docker, this will trigger the container to restart (with restart policy)
+        # On bare metal, you'll need to use a process manager like systemd or supervisor
+        def shutdown():
+            os._exit(1)
+        
+        # Schedule shutdown after response is sent
+        from threading import Timer
+        Timer(0.5, shutdown).start()
+        
+        return redirect(url_for('settings'))
+    except Exception as e:
+        flash(f'Error restarting server: {str(e)}', 'error')
+        return redirect(url_for('settings'))
+
 scheduler = BackgroundScheduler()
 
 def run_schedule():
@@ -145,6 +171,22 @@ scheduler.start()
 
 from models import User, Settings, PlexUser, Library, Share
 
+def get_setting(key, default=None):
+    """Get a setting value from the database"""
+    setting = Settings.query.filter_by(key=key).first()
+    if setting:
+        return setting.value
+    return default
+
+def update_setting(key, value):
+    """Update or create a setting in the database"""
+    setting = Settings.query.filter_by(key=key).first()
+    if not setting:
+        setting = Settings(key=key)
+        db.session.add(setting)
+    setting.value = value
+    db.session.commit()
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -190,73 +232,116 @@ def dashboard():
     
     return render_template('dashboard.html', users=users, libraries=libraries, next_run=next_run)
 
+def update_server_settings():
+    try:
+        server_port = request.form.get('server_port')
+        https_enabled = 'https_enabled' in request.form
+        ssl_type = request.form.get('ssl_type')
+        
+        update_setting('server_port', server_port)
+        update_setting('https_enabled', 'true' if https_enabled else 'false')
+        update_setting('ssl_type', ssl_type)
+        
+        if https_enabled:
+            cert_dir = os.path.join(app.root_path, 'certs')
+            os.makedirs(cert_dir, exist_ok=True)
+            
+            if ssl_type == 'custom':
+                cert_file = request.files.get('ssl_cert')
+                key_file = request.files.get('ssl_key')
+                
+                if cert_file and cert_file.filename:
+                    cert_path = os.path.join(cert_dir, 'custom.crt')
+                    cert_file.save(cert_path)
+                    update_setting('ssl_cert_path', cert_path)
+                    
+                if key_file and key_file.filename:
+                    key_path = os.path.join(cert_dir, 'custom.key')
+                    key_file.save(key_path)
+                    update_setting('ssl_key_path', key_path)
+            else:
+                # Generate self-signed if needed
+                cert_path = os.path.join(cert_dir, 'selfsigned.crt')
+                key_path = os.path.join(cert_dir, 'selfsigned.key')
+                
+                if not os.path.exists(cert_path) or not os.path.exists(key_path):
+                    from ssl_utils import generate_self_signed_cert
+                    generate_self_signed_cert(cert_path, key_path)
+                
+                update_setting('ssl_cert_path', cert_path)
+                update_setting('ssl_key_path', key_path)
+        
+        flash('Server settings updated. Please restart the application to apply changes.', 'success')
+    except Exception as e:
+        flash(f'Error updating server settings: {str(e)}', 'error')
+        
+    return redirect(url_for('settings'))
+
+def update_scheduler_settings():
+    scheduler_type = request.form.get('scheduler_type')
+    interval = request.form.get('scheduler_interval_minutes')
+    daily_time = request.form.get('scheduler_daily_time')
+    
+    update_setting('scheduler_type', scheduler_type)
+    update_setting('scheduler_interval_minutes', interval)
+    update_setting('scheduler_daily_time', daily_time)
+    
+    configure_scheduler()
+    flash('Scheduler settings updated successfully', 'success')
+    return redirect(url_for('settings'))
+
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
+    if not current_user.can_edit_settings():
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('dashboard'))
+        
     if request.method == 'POST':
-        # Check for admin privileges for settings update
-        if not current_user.is_admin():
-            flash('Access denied. Admin privileges required to change settings.', 'error')
-            return redirect(url_for('settings'))
+        # Handle Password Change
+        if 'current_password' in request.form:
+            return change_password()
             
+        # Handle Scheduler Config
+        if 'scheduler_type' in request.form:
+            return update_scheduler_settings()
+            
+        # Handle Server Config
+        if 'server_port' in request.form:
+            return update_server_settings()
+            
+        # Handle Plex Settings
         plex_url = request.form.get('plex_url')
         plex_token = request.form.get('plex_token')
-        scheduler_type = request.form.get('scheduler_type')
-        scheduler_interval = request.form.get('scheduler_interval_minutes')
-        scheduler_time = request.form.get('scheduler_daily_time')
         
-        # Save or update Plex settings
-        url_setting = Settings.query.filter_by(key='plex_url').first()
-        if not url_setting:
-            url_setting = Settings(key='plex_url')
-            db.session.add(url_setting)
-        url_setting.value = plex_url
+        if plex_url and plex_token:
+            update_setting('plex_url', plex_url)
+            update_setting('plex_token', plex_token)
+            flash('Plex settings updated successfully', 'success')
         
-        token_setting = Settings.query.filter_by(key='plex_token').first()
-        if not token_setting:
-            token_setting = Settings(key='plex_token')
-            db.session.add(token_setting)
-        token_setting.value = plex_token
-        
-        # Save scheduler settings
-        type_setting = Settings.query.filter_by(key='scheduler_type').first()
-        if not type_setting:
-            type_setting = Settings(key='scheduler_type')
-            db.session.add(type_setting)
-        type_setting.value = scheduler_type
-        
-        interval_setting = Settings.query.filter_by(key='scheduler_interval_minutes').first()
-        if not interval_setting:
-            interval_setting = Settings(key='scheduler_interval_minutes')
-            db.session.add(interval_setting)
-        interval_setting.value = scheduler_interval
-        
-        time_setting = Settings.query.filter_by(key='scheduler_daily_time').first()
-        if not time_setting:
-            time_setting = Settings(key='scheduler_daily_time')
-            db.session.add(time_setting)
-        time_setting.value = scheduler_time
-        
-        db.session.commit()
-        
-        # Reconfigure scheduler with new settings
-        configure_scheduler()
-        
-        flash('Settings updated successfully', 'success')
-        
-    # Get current settings
-    plex_url = Settings.query.filter_by(key='plex_url').first()
-    plex_token = Settings.query.filter_by(key='plex_token').first()
+        return redirect(url_for('settings'))
     
-    # Get scheduler settings with defaults
+    # Get all settings
+    plex_url = get_setting('plex_url')
+    plex_token = get_setting('plex_token')
+    
+    # Scheduler settings
     scheduler_settings = get_scheduler_settings()
     
+    # Server settings
+    server_port = get_setting('server_port', '5000')
+    https_enabled = get_setting('https_enabled', 'false') == 'true'
+    ssl_type = get_setting('ssl_type', 'self-signed')
+    
     return render_template('settings.html', 
-                         plex_url=plex_url.value if plex_url else '',
-                         plex_token=plex_token.value if plex_token else '',
+                         plex_url=plex_url, 
+                         plex_token=plex_token,
                          scheduler_type=scheduler_settings['type'],
                          scheduler_interval_minutes=scheduler_settings['interval_minutes'],
-                         scheduler_daily_time=scheduler_settings['daily_time'])
+                         scheduler_daily_time=scheduler_settings['daily_time'],
+                         server_port=server_port,
+                         https_enabled=https_enabled,
+                         ssl_type=ssl_type)
 
 def validate_password(password):
     """
@@ -604,4 +689,19 @@ def delete_user(user_id):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+        
+        # Get server config
+        port = int(get_setting('server_port', '5000'))
+        https_enabled = get_setting('https_enabled', 'false') == 'true'
+        
+        ssl_context = None
+        if https_enabled:
+            cert_path = get_setting('ssl_cert_path')
+            key_path = get_setting('ssl_key_path')
+            
+            if cert_path and key_path and os.path.exists(cert_path) and os.path.exists(key_path):
+                ssl_context = (cert_path, key_path)
+            else:
+                print("Warning: HTTPS enabled but certificates not found. Falling back to HTTP.")
+    
+    app.run(host='0.0.0.0', port=port, ssl_context=ssl_context, debug=True)
