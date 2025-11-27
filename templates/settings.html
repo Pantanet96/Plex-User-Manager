@@ -13,6 +13,67 @@
     {% endif %}
     {% endwith %}
 
+    <!-- Server Configuration -->
+    <h3>Server Configuration</h3>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="server_port">Server Port</label>
+            <input type="number" id="server_port" name="server_port" value="{{ server_port }}" min="1024" max="65535"
+                required>
+            <p class="scheduler-help-text">Default: 5000. Requires restart to apply.</p>
+        </div>
+
+        <div class="form-group">
+            <label class="checkbox-container">
+                <input type="checkbox" id="https_enabled" name="https_enabled" {% if https_enabled %}checked{% endif %}
+                    onchange="toggleSSLFields()">
+                <span class="checkmark"></span>
+                Enable HTTPS
+            </label>
+        </div>
+
+        <div id="ssl_fields" style="display: none;">
+            <div class="form-group">
+                <label>SSL Certificate Type</label>
+                <div class="scheduler-type-group">
+                    <label class="scheduler-type-label">
+                        <input type="radio" name="ssl_type" value="self-signed" {% if ssl_type=='self-signed'
+                            %}checked{% endif %} onchange="toggleSSLUpload()">
+                        <span>Self-signed Certificate (Auto-generated)</span>
+                    </label>
+                    <label class="scheduler-type-label">
+                        <input type="radio" name="ssl_type" value="custom" {% if ssl_type=='custom' %}checked{% endif %}
+                            onchange="toggleSSLUpload()">
+                        <span>Custom Certificate</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="custom_ssl_upload"
+                style="display: none; margin-left: 1.5rem; padding-left: 1rem; border-left: 2px solid rgba(255,255,255,0.1);">
+                <div class="form-group">
+                    <label for="ssl_cert">Certificate File (.crt/.pem)</label>
+                    <input type="file" id="ssl_cert" name="ssl_cert" accept=".crt,.pem">
+                </div>
+                <div class="form-group">
+                    <label for="ssl_key">Private Key File (.key)</label>
+                    <input type="file" id="ssl_key" name="ssl_key" accept=".key">
+                </div>
+            </div>
+        </div>
+
+        <button type="submit">Save Server Settings</button>
+    </form>
+
+    <div style="margin-top: 1rem;">
+        <button type="button" onclick="restartServer()"
+            style="background-color: #dc3545; border-color: #dc3545;">Restart Server</button>
+        <p class="scheduler-help-text">Restart the server to apply configuration changes.</p>
+    </div>
+
+
+    <hr style="margin: 2rem 0; border: 1px solid rgba(255,255,255,0.1);">
+
     <!-- Plex Settings -->
     <form method="POST">
         <div class="form-group">
@@ -33,6 +94,44 @@
                 </button>
             </div>
         </div>
+
+        <hr style="margin: 2rem 0; border: 1px solid rgba(255,255,255,0.1);">
+
+        <h3>Scheduler Configuration</h3>
+
+        <div class="form-group">
+            <label>Scheduler Type</label>
+            <div class="scheduler-type-group">
+                <label class="scheduler-type-label">
+                    <input type="radio" name="scheduler_type" value="interval" {% if scheduler_type=='interval'
+                        %}checked{% endif %} onchange="toggleSchedulerFields()">
+                    <span>Interval (every X minutes)</span>
+                </label>
+                <label class="scheduler-type-label">
+                    <input type="radio" name="scheduler_type" value="daily" {% if scheduler_type=='daily' %}checked{%
+                        endif %} onchange="toggleSchedulerFields()">
+                    <span>Daily (at specific time)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group" id="interval_field">
+            <label for="scheduler_interval_minutes">Interval (minutes)</label>
+            <input type="number" id="scheduler_interval_minutes" name="scheduler_interval_minutes"
+                value="{{ scheduler_interval_minutes }}" min="5" max="1440" step="5" placeholder="60">
+            <p class="scheduler-help-text">
+                Minimum: 5 minutes, Maximum: 1440 minutes (1 day)
+            </p>
+        </div>
+
+        <div class="form-group" id="daily_field">
+            <label for="scheduler_daily_time">Daily Execution Time</label>
+            <input type="time" id="scheduler_daily_time" name="scheduler_daily_time" value="{{ scheduler_daily_time }}">
+            <p class="scheduler-help-text">
+                Scheduler will run once per day at this time
+            </p>
+        </div>
+
         <button type="submit">Save Settings</button>
     </form>
 
@@ -57,7 +156,10 @@
         <div class="form-group">
             <label for="new_password">New Password</label>
             <div class="password-wrapper">
-                <input type="password" id="new_password" name="new_password" required>
+                <input type="password" id="new_password" name="new_password" minlength="8"
+                    pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?&quot;:{}|<>_\-+=\[\]\\\/;~`]).{8,}$"
+                    title="Password must be at least 8 characters and contain at least one uppercase letter, one number, and one special character"
+                    required>
                 <button type="button" class="btn-toggle-password" onclick="togglePassword('new_password')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -66,6 +168,10 @@
                     </svg>
                 </button>
             </div>
+            <p class="scheduler-help-text">
+                Must be at least 8 characters and include: one uppercase letter (A-Z), one number (0-9), and one special
+                character (!@#$%^&*(),.?":{}|<>_-+=[]\/;~`)
+            </p>
         </div>
         <div class="form-group">
             <label for="confirm_password">Confirm New Password</label>
@@ -85,6 +191,48 @@
 
     <hr style="margin: 3rem 0; border: 1px solid rgba(255,255,255,0.1);">
 
+    <!-- Application Logs -->
+    <h3>Application Logs</h3>
+    <div class="log-viewer-container">
+        <div class="log-controls">
+            <div class="form-group">
+                <label for="log_file">Log File</label>
+                <select id="log_file" onchange="fetchLogs()">
+                    <option value="app">Application Logs</option>
+                    <option value="error">Error Logs</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="log_level">Filter by Level</label>
+                <select id="log_level" onchange="fetchLogs()">
+                    <option value="">All Levels</option>
+                    <option value="DEBUG">DEBUG</option>
+                    <option value="INFO">INFO</option>
+                    <option value="WARNING">WARNING</option>
+                    <option value="ERROR">ERROR</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="log_lines">Number of Lines</label>
+                <input type="number" id="log_lines" value="100" min="10" max="1000" step="10" onchange="fetchLogs()">
+            </div>
+        </div>
+
+        <div class="log-controls-row">
+            <label>
+                <input type="checkbox" id="auto_refresh" checked onchange="toggleAutoRefresh()">
+                <span>Auto-refresh (every 5 seconds)</span>
+            </label>
+            <button type="button" class="btn-download" onclick="downloadLogs()">Download Log File</button>
+        </div>
+
+        <div id="log_viewer" class="log-viewer">
+            <div class="log-loading">Loading logs...</div>
+        </div>
+    </div>
+
+    <hr style="margin: 3rem 0; border: 1px solid rgba(255,255,255,0.1);">
+
     <!-- Debug Tools -->
     <h3>Debug Tools</h3>
     <form method="POST" action="{{ url_for('run_scheduler') }}">
@@ -100,6 +248,157 @@
         const input = document.getElementById(inputId);
         const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
         input.setAttribute('type', type);
+    }
+
+    function toggleSchedulerFields() {
+        const schedulerType = document.querySelector('input[name="scheduler_type"]:checked').value;
+        const intervalField = document.getElementById('interval_field');
+        const dailyField = document.getElementById('daily_field');
+
+        if (schedulerType === 'interval') {
+            intervalField.style.display = 'block';
+            dailyField.style.display = 'none';
+        } else {
+            intervalField.style.display = 'none';
+            dailyField.style.display = 'block';
+        }
+    }
+
+    function toggleSSLFields() {
+        const httpsEnabled = document.getElementById('https_enabled').checked;
+        const sslFields = document.getElementById('ssl_fields');
+        sslFields.style.display = httpsEnabled ? 'block' : 'none';
+        if (httpsEnabled) {
+            toggleSSLUpload();
+        }
+    }
+
+    function toggleSSLUpload() {
+        const sslType = document.querySelector('input[name="ssl_type"]:checked').value;
+        const customUpload = document.getElementById('custom_ssl_upload');
+        customUpload.style.display = sslType === 'custom' ? 'block' : 'none';
+    }
+
+    // Initialize field visibility on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        toggleSchedulerFields();
+        toggleSSLFields();
+        fetchLogs(); // Load logs on page load
+    });
+
+    // Log Viewer Functions
+    let autoRefreshInterval = null;
+
+    async function fetchLogs() {
+        const logFile = document.getElementById('log_file').value;
+        const logLevel = document.getElementById('log_level').value;
+        const logLines = document.getElementById('log_lines').value;
+        const logViewer = document.getElementById('log_viewer');
+
+        // Build API URL
+        let url = `/api/logs?file=${logFile}&lines=${logLines}`;
+        if (logLevel) {
+            url += `&level=${logLevel}`;
+        }
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Failed to fetch logs');
+            }
+
+            const data = await response.json();
+            displayLogs(data.logs);
+        } catch (error) {
+            logViewer.innerHTML = `<div class="log-empty">Error loading logs: ${error.message}</div>`;
+        }
+    }
+
+    function displayLogs(logs) {
+        const logViewer = document.getElementById('log_viewer');
+
+        if (!logs || logs.length === 0) {
+            logViewer.innerHTML = '<div class="log-empty">No logs found</div>';
+            return;
+        }
+
+        let html = '';
+        logs.forEach(log => {
+            const levelClass = `level-${log.level}`;
+            html += `
+                <div class="log-entry ${levelClass}">
+                    <span class="log-timestamp">${log.timestamp}</span>
+                    <span class="log-logger">[${log.logger}]</span>
+                    <span class="log-level">${log.level}</span>
+                    <span class="log-message">${escapeHtml(log.message)}</span>
+                </div>
+            `;
+        });
+
+        logViewer.innerHTML = html;
+        // Scroll to bottom
+        logViewer.scrollTop = logViewer.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function toggleAutoRefresh() {
+        const autoRefresh = document.getElementById('auto_refresh').checked;
+
+        if (autoRefresh) {
+            // Start auto-refresh every 5 seconds
+            autoRefreshInterval = setInterval(fetchLogs, 5000);
+        } else {
+            // Stop auto-refresh
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+    }
+
+    function downloadLogs() {
+        const logFile = document.getElementById('log_file').value;
+        window.location.href = `/api/logs/download?file=${logFile}`;
+    }
+
+    // Start auto-refresh if checkbox is checked
+    if (document.getElementById('auto_refresh').checked) {
+        autoRefreshInterval = setInterval(fetchLogs, 5000);
+    }
+
+    async function restartServer() {
+        if (!confirm('Are you sure you want to restart the server? This will interrupt active connections.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/restart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok || response.status === 0) { // status 0 might happen if server dies immediately
+                alert('Server is restarting... The page will reload in 10 seconds.');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 10000);
+            } else {
+                alert('Failed to restart server.');
+            }
+        } catch (error) {
+            // Network error is expected as server dies
+            alert('Server is restarting... The page will reload in 10 seconds.');
+            setTimeout(() => {
+                window.location.reload();
+            }, 10000);
+        }
     }
 </script>
 {% endblock %}

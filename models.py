@@ -3,9 +3,16 @@ from flask_login import UserMixin
 from datetime import datetime
 
 class User(UserMixin, db.Model):
+    # Role constants
+    ROLE_ADMIN = 'admin'
+    ROLE_MODERATOR = 'moderator'
+    ROLE_AUDITOR = 'auditor'
+    ROLES = [ROLE_ADMIN, ROLE_MODERATOR, ROLE_AUDITOR]
+    
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
+    role = db.Column(db.String(20), nullable=False, default=ROLE_AUDITOR)
 
     def set_password(self, password):
         from werkzeug.security import generate_password_hash
@@ -14,6 +21,38 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         from werkzeug.security import check_password_hash
         return check_password_hash(self.password_hash, password)
+    
+    def has_role(self, role):
+        """Check if user has a specific role"""
+        return self.role == role
+    
+    def is_admin(self):
+        """Check if user is an admin"""
+        return self.role == self.ROLE_ADMIN
+    
+    def is_moderator(self):
+        """Check if user is a moderator or admin"""
+        return self.role in [self.ROLE_ADMIN, self.ROLE_MODERATOR]
+    
+    def is_auditor(self):
+        """Check if user is an auditor (all authenticated users)"""
+        return self.role in self.ROLES
+    
+    def can_manage_users(self):
+        """Check if user can manage other users"""
+        return self.is_admin()
+    
+    def can_edit_libraries(self):
+        """Check if user can edit library access"""
+        return self.is_moderator()
+    
+    def can_sync_plex(self):
+        """Check if user can sync with Plex"""
+        return self.is_moderator()
+    
+    def can_edit_settings(self):
+        """Check if user can edit application settings"""
+        return self.is_admin()
 
 class PlexUser(db.Model):
     id = db.Column(db.Integer, primary_key=True)

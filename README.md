@@ -1,9 +1,12 @@
 # Plex User Library Management
 
+⚠️ **ALPHA VERSION** - This software is in early development and may contain bugs. Use at your own risk.
+
 A modern web application for managing Plex library sharing with scheduled access control and expiration dates.
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Flask](https://img.shields.io/badge/flask-3.0+-green.svg)
+![Status](https://img.shields.io/badge/status-alpha-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## Features
@@ -11,11 +14,17 @@ A modern web application for managing Plex library sharing with scheduled access
 - 🎯 **Manual Library Sharing**: Easily manage which libraries each user can access
 - ⏰ **Scheduled Access**: Set start and expiration dates for library access
 - 🔄 **Automatic Sync**: Import users and libraries from your Plex server
-- 📅 **Background Scheduler**: Automatically applies access changes based on dates (runs hourly)
+- 📅 **Configurable Scheduler**: Customize scheduler frequency (5 minutes to daily) or run at specific times
+- 📝 **Log Management**: Real-time log viewing with filtering, auto-refresh, and download capabilities
 - 🎨 **Modern UI**: Beautiful dark theme with glassmorphism effects
-- 🔐 **Local Authentication**: Secure admin login
+- 🔐 **Local Authentication**: Secure admin login with password change functionality
+- 🔑 **Password Visibility Toggle**: Show/hide passwords with SVG eye icons
 - 📊 **Real-time Updates**: Changes are immediately reflected on Plex
 - 🛡️ **Default Library Protection**: Prevents user removal by maintaining a default library assignment
+- 👥 **Role-Based Access Control**: Multi-user support with Admin, Moderator, and Auditor roles
+- ⚙️ **Server Configuration**: Customize port and enable HTTPS with self-signed or custom certificates
+- 🔄 **One-Click Restart**: Restart server from UI (Docker-ready with exit code 1)
+
 
 ## Screenshots
 
@@ -28,7 +37,34 @@ A modern web application for managing Plex library sharing with scheduled access
 - Plex Pass (required for sharing libraries)
 - Plex Authentication Token ([How to find your token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/))
 
-## Installation
+**OR**
+
+- Docker and Docker Compose (for containerized deployment)
+
+## Deployment Options
+
+### Option 1: Docker (Recommended) 🐳
+
+The easiest way to deploy is using Docker:
+
+```bash
+# Clone repository
+git clone https://github.com/Pantanet96/Plex-User-Manager.git
+cd Plex-User-Manager
+
+# Create and configure environment
+cp .env.example .env
+nano .env  # Edit with your settings
+
+# Start container
+docker-compose up -d
+```
+
+Access at `http://localhost:5000` and login with `admin` / `admin`
+
+📖 **Full Docker documentation**: See [DOCKER.md](DOCKER.md) for detailed instructions, environment variables, and troubleshooting.
+
+### Option 2: Manual Installation
 
 1. **Clone the repository**
    ```bash
@@ -60,7 +96,7 @@ A modern web application for managing Plex library sharing with scheduled access
    ```bash
    python init_db.py
    ```
-   This creates the SQLite database and a default admin user (`admin`/`admin`).
+   This creates the SQLite database and default users.
 
 ## Configuration
 
@@ -71,7 +107,11 @@ A modern web application for managing Plex library sharing with scheduled access
 
 2. **Access the web interface**
    - Open your browser and navigate to `http://127.0.0.1:5000`
-   - Login with default credentials: `admin` / `admin`
+   - Login with default credentials:
+     - **Username**: `admin`
+     - **Password**: `admin`
+     - **Role**: Admin
+   - ⚠️ **Change the default password immediately after first login!**
 
 3. **Configure Plex settings**
    - Go to Settings
@@ -82,6 +122,25 @@ A modern web application for managing Plex library sharing with scheduled access
 4. **Sync with Plex**
    - Go to Dashboard
    - Click "Sync with Plex" to import users and libraries
+
+## Multi-User & Roles
+
+The application supports three distinct user roles:
+
+1. **Admin** 🔴
+   - Full access to all features
+   - Manage application settings (Plex connection, Scheduler)
+   - Manage users (Create, Edit, Delete)
+   - View and download logs
+
+2. **Moderator** 🔵
+   - Manage Plex libraries and user access
+   - Sync with Plex
+   - Cannot access Settings or User Management
+
+3. **Auditor** ⚪
+   - Read-only access to Dashboard and Logs
+   - Cannot make any changes
 
 ## Usage
 
@@ -99,14 +158,65 @@ A modern web application for managing Plex library sharing with scheduled access
 - Set a **Start Date** to grant access beginning at a specific time
 - Set an **Expiration Date** to automatically revoke access after a certain date
 - Leave dates empty for immediate and permanent access
-- The background scheduler runs every hour to apply date-based changes
+- The background scheduler automatically applies date-based changes
+
+### Scheduler Configuration
+
+You can customize how often the scheduler runs:
+
+1. Go to **Settings**
+2. Scroll to **Scheduler Configuration**
+3. Choose between two modes:
+   - **Interval Mode**: Run every X minutes (5-1440 minutes)
+   - **Daily Mode**: Run once per day at a specific time (e.g., 03:00)
+4. Click **Save Settings**
+
+The scheduler will automatically reconfigure without requiring an app restart.
 
 ### Manual Scheduler Trigger
+
 
 For testing purposes, you can manually trigger the scheduler:
 1. Go to Settings
 2. Scroll to "Debug Tools"
 3. Click "Run Scheduler Now"
+
+### Log Management
+
+View and monitor application logs directly from the Settings page:
+
+1. Go to **Settings**
+2. Scroll to **Application Logs**
+3. Select log file:
+   - **Application Logs**: All application activity (INFO, WARNING, ERROR)
+   - **Error Logs**: Only error messages
+4. Filter by log level (DEBUG, INFO, WARNING, ERROR)
+5. Adjust number of lines to display (10-1000)
+6. Enable/disable auto-refresh (updates every 5 seconds)
+7. Download complete log files for offline analysis
+
+**Log Rotation**: Log files are automatically rotated when they reach 10MB, keeping the last 5 backup files (50MB total per log type).
+
+### Server Configuration
+
+Configure server port and HTTPS settings from the Settings page:
+
+1. Go to **Settings**
+2. Scroll to **Server Configuration**
+3. Configure options:
+   - **Server Port**: Change the default port (5000) to any port between 1024-65535
+   - **Enable HTTPS**: Toggle HTTPS support
+   - **SSL Certificate Type**:
+     - **Self-signed**: Automatically generates a self-signed certificate (for development/testing)
+     - **Custom Certificate**: Upload your own `.crt` and `.key` files (for production)
+4. Click **Save Server Settings**
+5. Click **Restart Server** to apply changes
+
+**Important Notes**:
+- Port and HTTPS changes require a server restart to take effect
+- Self-signed certificates will show browser warnings (normal for development)
+- For production, use valid SSL certificates from a trusted CA
+- In Docker deployments, the restart button triggers a container restart (requires `restart: unless-stopped` policy)
 
 ## Security Considerations
 
@@ -114,6 +224,11 @@ For testing purposes, you can manually trigger the scheduler:
 
 1. **Change the default admin password**
    - The default credentials (`admin`/`admin`) should be changed immediately
+   - New passwords must meet security requirements:
+     - Minimum 8 characters
+     - At least one uppercase letter (A-Z)
+     - At least one number (0-9)
+     - At least one special character (!@#$%^&*(),.?":{}|<>_-+=[]\/;~`)
 
 2. **Update the SECRET_KEY**
    - In `app.py`, replace `your_secret_key_here` with a secure random key:
@@ -138,16 +253,24 @@ Plex-User-Manager/
 ├── models.py              # Database models
 ├── database.py            # Database initialization
 ├── plex_service.py        # Plex API integration
+├── ssl_utils.py           # SSL certificate generation utilities
 ├── init_db.py             # Database setup script
 ├── requirements.txt       # Python dependencies
+├── LICENSE                # MIT License
 ├── static/
 │   └── style.css          # Application styling
-└── templates/
-    ├── base.html          # Base template
-    ├── login.html         # Login page
-    ├── dashboard.html     # Main dashboard
-    ├── settings.html      # Settings page
-    └── user_details.html  # User management page
+├── templates/
+│   ├── base.html          # Base template
+│   ├── login.html         # Login page
+│   ├── dashboard.html     # Main dashboard
+│   ├── settings.html      # Settings page
+│   ├── users.html         # User management page
+│   └── user_details.html  # User access management page
+└── tests/
+    ├── __init__.py        # Tests package
+    ├── test_models.py     # Model unit tests
+    ├── test_auth.py       # Authentication tests
+    └── README.md          # Test documentation
 ```
 
 ## Technologies Used

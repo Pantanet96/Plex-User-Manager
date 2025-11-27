@@ -31,9 +31,11 @@
             <p>Scheduler not running</p>
             {% endif %}
         </div>
+        {% if current_user.can_sync_plex() %}
         <form action="{{ url_for('sync_plex') }}" method="POST">
             <button type="submit" class="btn-sync">Sync with Plex</button>
         </form>
+        {% endif %}
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -63,7 +65,9 @@
                     <td>{{ user.username }}</td>
                     <td>{{ user.email }}</td>
                     <td>
-                        <a href="{{ url_for('user_details', user_id=user.id) }}" class="btn-details">Manage Access</a>
+                        <a href="{{ url_for('user_details', user_id=user.id) }}" class="btn-details">
+                            {% if current_user.can_edit_libraries() %}Manage Access{% else %}View Details{% endif %}
+                        </a>
                     </td>
                 </tr>
                 {% endfor %}

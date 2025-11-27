@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="settings-container">
+    <h2>User Management</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <p class="{{ category }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- User List -->
+    <div class="users-list">
+        <h3>Existing Users</h3>
+        <div class="table-responsive">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td><span class="role-badge role-{{ user.role }}">{{ user.role }}</span></td>
+                        <td class="actions-cell">
+                            {% if user.id != current_user.id %}
+                            <button type="button" class="btn-edit"
+                                onclick="openEditModal('{{ user.id }}', '{{ user.username }}', '{{ user.role }}')">Edit</button>
+                            <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}"
+                                style="display: inline;"
+                                onsubmit="return confirm('Are you sure you want to delete user {{ user.username }}?');">
+                                <button type="submit" class="btn-delete">Delete</button>
+                            </form>
+                            {% else %}
+                            <span class="current-user-badge">Current User</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <hr style="margin: 3rem 0; border: 1px solid rgba(255,255,255,0.1);">
+
+    <!-- Create User -->
+    <h3>Create New User</h3>
+    <form method="POST" action="{{ url_for('create_user') }}" class="create-user-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="role">Role</label>
+                <select id="role" name="role" required>
+                    <option value="auditor">Auditor (Read-only)</option>
+                    <option value="moderator">Moderator (Manage Libraries)</option>
+                    <option value="admin">Admin (Full Access)</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <div class="password-wrapper">
+                <input type="password" id="password" name="password" minlength="8"
+                    pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?&quot;:{}|<>_\-+=\[\]\\\/;~`]).{8,}$"
+                    title="Password must be at least 8 characters and contain at least one uppercase letter, one number, and one special character"
+                    required>
+                <button type="button" class="btn-toggle-password" onclick="togglePassword('password')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </button>
+            </div>
+            <p class="scheduler-help-text">
+                Must be at least 8 characters and include: one uppercase letter (A-Z), one number (0-9), and one special
+                character (!@#$%^&*(),.?":{}|<>_-+=[]\/;~`)
+            </p>
+        </div>
+        <button type="submit" class="btn-create">Create User</button>
+    </form>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h3>Edit User: <span id="editUsername"></span></h3>
+        <form id="editForm" method="POST">
+            <div class="form-group">
+                <label for="edit_role">Role</label>
+                <select id="edit_role" name="role">
+                    <option value="auditor">Auditor</option>
+                    <option value="moderator">Moderator</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edit_password">New Password (leave blank to keep current)</label>
+                <div class="password-wrapper">
+                    <input type="password" id="edit_password" name="password" minlength="8"
+                        pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?&quot;:{}|<>_\-+=\[\]\\\/;~`]).{8,}$"
+                        title="Password must be at least 8 characters and contain at least one uppercase letter, one number, and one special character">
+                    <button type="button" class="btn-toggle-password" onclick="togglePassword('edit_password')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+                <p class="scheduler-help-text">
+                    Must be at least 8 characters and include: one uppercase letter (A-Z), one number (0-9), and one
+                    special character (!@#$%^&*(),.?":{}|<>_-+=[]\/;~`)
+                </p>
+            </div>
+            <button type="submit" class="btn-save">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+        input.setAttribute('type', type);
+    }
+
+    function openEditModal(userId, username, role) {
+        const modal = document.getElementById('editModal');
+        const form = document.getElementById('editForm');
+        const usernameSpan = document.getElementById('editUsername');
+        const roleSelect = document.getElementById('edit_role');
+
+        form.action = `/users/${userId}/edit`;
+        usernameSpan.textContent = username;
+        roleSelect.value = role;
+
+        modal.style.display = 'block';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
+
+    window.onclick = function (event) {
+        const modal = document.getElementById('editModal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}
