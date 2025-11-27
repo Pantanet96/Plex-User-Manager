@@ -1,9 +1,12 @@
 # Plex User Library Management
 
+⚠️ **ALPHA VERSION** - This software is in early development and may contain bugs. Use at your own risk.
+
 A modern web application for managing Plex library sharing with scheduled access control and expiration dates.
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Flask](https://img.shields.io/badge/flask-3.0+-green.svg)
+![Status](https://img.shields.io/badge/status-alpha-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## Features
@@ -226,15 +229,21 @@ Plex-User-Manager/
 ├── ssl_utils.py           # SSL certificate generation utilities
 ├── init_db.py             # Database setup script
 ├── requirements.txt       # Python dependencies
+├── LICENSE                # MIT License
 ├── static/
 │   └── style.css          # Application styling
-└── templates/
-    ├── base.html          # Base template
-    ├── login.html         # Login page
-    ├── dashboard.html     # Main dashboard
-    ├── settings.html      # Settings page
-    ├── users.html         # User management page
-    └── user_details.html  # User access management page
+├── templates/
+│   ├── base.html          # Base template
+│   ├── login.html         # Login page
+│   ├── dashboard.html     # Main dashboard
+│   ├── settings.html      # Settings page
+│   ├── users.html         # User management page
+│   └── user_details.html  # User access management page
+└── tests/
+    ├── __init__.py        # Tests package
+    ├── test_models.py     # Model unit tests
+    ├── test_auth.py       # Authentication tests
+    └── README.md          # Test documentation
 ```
 
 ## Technologies Used
