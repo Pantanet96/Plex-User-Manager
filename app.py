@@ -41,7 +41,9 @@ app.logger.addHandler(error_handler)
 app.logger.setLevel(logging.INFO)
 
 app.config['SECRET_KEY'] = 'your_secret_key_here' # TODO: Change this to a secure random key
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///plex_manager.db'
+# Use absolute path for database to ensure persistence in Docker
+db_path = os.environ.get('DATABASE_PATH', '/app/instance/plex_manager.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -93,16 +95,16 @@ def auditor_required(f):
 @login_required
 @admin_required
 def restart_server():
-    """Restarts the application by exiting with code 1."""
+    """Restarts the application by exiting with code 0 for clean Docker restart."""
     try:
-        app.logger.info('Restart requested by user. Exiting with code 1...')
+        app.logger.info('Restart requested by user. Exiting cleanly for restart...')
         flash('Server is restarting...', 'info')
         
-        # Exit with code 1 to signal that a restart is needed
-        # In Docker, this will trigger the container to restart (with restart policy)
+        # Exit with code 0 (clean exit) to ensure Docker restart policy works
+        # Docker will restart the container with restart policies like 'unless-stopped' or 'always'
         # On bare metal, you'll need to use a process manager like systemd or supervisor
         def shutdown():
-            os._exit(1)
+            os._exit(0)
         
         # Schedule shutdown after response is sent
         from threading import Timer
@@ -166,8 +168,8 @@ def configure_scheduler():
         app.logger.info(f"Scheduler configured for interval execution every {settings['interval_minutes']} minutes")
 
 # Initialize scheduler with settings
-configure_scheduler()
-scheduler.start()
+# configure_scheduler()
+# scheduler.start()
 
 from models import User, Settings, PlexUser, Library, Share
 
@@ -688,7 +690,23 @@ def delete_user(user_id):
 
 if __name__ == '__main__':
     with app.app_context():
+        # Ensure instance directory exists before creating database
+        instance_dir = os.path.join(app.root_path, 'instance')
+        os.makedirs(instance_dir, exist_ok=True)
+        
         db.create_all()
+        
+        # Create default admin user if it doesn't exist
+        if not User.query.filter_by(username='admin').first():
+            print("Creating default admin user...")
+            admin = User(username='admin', role=User.ROLE_ADMIN)
+            admin.set_password('admin')
+            db.session.add(admin)
+            db.session.commit()
+            print("✓ Default admin user created: admin / admin")
+            print("⚠️  IMPORTANT: Change the default password immediately!")
+        else:
+            print("✓ Admin user already exists")
         
         # Get server config
         port = int(get_setting('server_port', '5000'))
@@ -703,5 +721,9 @@ if __name__ == '__main__':
                 ssl_context = (cert_path, key_path)
             else:
                 print("Warning: HTTPS enabled but certificates not found. Falling back to HTTP.")
+
+        # Initialize scheduler after database creation
+        configure_scheduler()
+        scheduler.start()
     
     app.run(host='0.0.0.0', port=port, ssl_context=ssl_context, debug=True)

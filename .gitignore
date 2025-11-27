@@ -42,6 +42,7 @@ auto_cleanup.py
 # Docker
 .env
 .env.local
+docker-compose.yml
 data/
 *.db-journal
 

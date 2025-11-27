@@ -52,9 +52,13 @@ The easiest way to deploy is using Docker:
 git clone https://github.com/Pantanet96/Plex-User-Manager.git
 cd Plex-User-Manager
 
-# Create and configure environment
+# Copy configuration templates
+cp docker-compose.example.yml docker-compose.yml
 cp .env.example .env
-nano .env  # Edit with your settings
+
+# Edit with your settings
+nano .env  # or use your preferred editor
+nano docker-compose.yml  # optional: customize volumes, ports, etc.
 
 # Start container
 docker-compose up -d

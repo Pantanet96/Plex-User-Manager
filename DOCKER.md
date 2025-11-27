@@ -10,14 +10,16 @@ This guide explains how to deploy Plex User Manager using Docker.
    cd Plex-User-Manager
    ```
 
-2. **Create environment file**
+2. **Copy configuration templates**
    ```bash
+   cp docker-compose.example.yml docker-compose.yml
    cp .env.example .env
    ```
 
-3. **Edit `.env` file** with your configuration
+3. **Edit configuration files**
    ```bash
-   nano .env  # or use your preferred editor
+   nano .env  # Edit with your settings
+   nano docker-compose.yml  # Optional: customize volumes, ports, network mode
    ```
 
 4. **Start the container**
@@ -32,36 +34,154 @@ This guide explains how to deploy Plex User Manager using Docker.
 
 ## Environment Variables
 
-### Required Variables
+### Flask & Server Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SECRET_KEY` | `change-me-in-production` | Flask secret key (MUST change for production) |
-| `SERVER_PORT` | `5000` | Port the server listens on |
+| `SECRET_KEY` | `change-me-in-production` | Flask secret key for session encryption. **MUST change for production!** Generate with: `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `SERVER_PORT` | `5000` | Port the server listens on inside the container |
+| `FLASK_APP` | `app.py` | Flask application entry point (usually no need to change) |
 
-### Optional Variables
+### HTTPS Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HTTPS_ENABLED` | `false` | Enable HTTPS |
-| `PLEX_URL` | - | Plex server URL (can be set via UI) |
-| `PLEX_TOKEN` | - | Plex authentication token (can be set via UI) |
-| `SCHEDULER_TYPE` | `interval` | Scheduler type: `interval` or `daily` |
-| `SCHEDULER_INTERVAL_MINUTES` | `60` | Minutes between scheduler runs (5-1440) |
-| `SCHEDULER_DAILY_TIME` | `03:00` | Daily execution time (HH:MM format) |
-| `TZ` | `Europe/Rome` | Timezone for scheduler and logs |
+| `HTTPS_ENABLED` | `false` | Enable HTTPS (`true` or `false`) |
+
+### Plex Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PLEX_URL` | - | Plex server URL (e.g., `http://192.168.1.100:32400`). Can also be set via web UI |
+| `PLEX_TOKEN` | - | Plex authentication token. Can also be set via web UI. [How to find your token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/) |
+
+### Scheduler Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SCHEDULER_TYPE` | `interval` | Scheduler execution type: `interval` (periodic) or `daily` (once per day) |
+| `SCHEDULER_INTERVAL_MINUTES` | `60` | Minutes between scheduler runs when using `interval` type (range: 5-1440) |
+| `SCHEDULER_DAILY_TIME` | `03:00` | Daily execution time when using `daily` type (24-hour format: HH:MM) |
+
+### Database Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_PATH` | `/app/instance/plex_manager.db` | Full path to SQLite database file inside container |
+
+### System Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TZ` | `Europe/Rome` | Timezone for scheduler and logs (e.g., `America/New_York`, `Asia/Tokyo`) |
+| `PYTHONUNBUFFERED` | `1` | Python output buffering (keep as `1` for real-time logs) |
 
 ## Persistent Data
 
-The following directories are mounted as volumes to persist data across container restarts:
+The following directories should be mounted as volumes to persist data across container restarts:
 
-| Host Path | Container Path | Purpose |
-|-----------|----------------|---------|
-| `./data/instance` | `/app/instance` | SQLite database |
-| `./data/certs` | `/app/certs` | SSL certificates |
-| `./data/logs` | `/app/logs` | Application logs |
+| Host Path | Container Path | Purpose | Required |
+|-----------|----------------|---------|----------|
+| `./data/instance` | `/app/instance` | SQLite database | **Yes** |
+| `./data/certs` | `/app/certs` | SSL certificates (self-signed and custom) | Recommended |
+| `./data/logs` | `/app/logs` | Application logs (app.log, error.log) | Optional |
 
 **Important**: These directories will be created automatically on first run.
+
+## Deployment Methods
+
+### Method 1: Docker Compose (Recommended)
+
+This is the easiest method with all configurations in one place.
+
+1. **Create environment file**:
+   ```bash
+   cp .env.example .env
+   nano .env  # Edit with your settings
+   ```
+
+2. **Start the container**:
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **View logs**:
+   ```bash
+   docker-compose logs -f
+   ```
+
+### Method 2: Docker Run
+
+For manual control or custom setups.
+
+**Basic usage**:
+```bash
+docker run -d \
+  --name plex-user-manager \
+  --restart unless-stopped \
+  -p 5000:5000 \
+  -v /path/to/data/instance:/app/instance \
+  -v /path/to/data/certs:/app/certs \
+  -v /path/to/data/logs:/app/logs \
+  -e SECRET_KEY=your-secret-key-here \
+  -e TZ=Europe/Rome \
+  plex-user-manager
+```
+
+**Windows example**:
+```powershell
+docker run -d `
+  --name plex-user-manager `
+  --restart unless-stopped `
+  -p 5000:5000 `
+  -v "C:/docker/plex-user/instance:/app/instance" `
+  -v "C:/docker/plex-user/certs:/app/certs" `
+  -v "C:/docker/plex-user/logs:/app/logs" `
+  -e SECRET_KEY=your-secret-key-here `
+  -e TZ=Europe/Rome `
+  plex-user-manager
+```
+
+**With all environment variables**:
+```bash
+docker run -d \
+  --name plex-user-manager \
+  --restart unless-stopped \
+  -p 5000:5000 \
+  -v /path/to/data/instance:/app/instance \
+  -v /path/to/data/certs:/app/certs \
+  -v /path/to/data/logs:/app/logs \
+  -e SECRET_KEY=your-secret-key-here \
+  -e SERVER_PORT=5000 \
+  -e HTTPS_ENABLED=false \
+  -e PLEX_URL=http://192.168.1.100:32400 \
+  -e PLEX_TOKEN=your-plex-token \
+  -e SCHEDULER_TYPE=interval \
+  -e SCHEDULER_INTERVAL_MINUTES=60 \
+  -e TZ=Europe/Rome \
+  plex-user-manager
+```
+
+## Restart Behavior
+
+### Application Restart Button
+
+When you click the "Restart Server" button in the web UI:
+- The application exits with code 1
+- Docker will automatically restart the container **only if** you used `--restart` policy or docker-compose with `restart: unless-stopped`
+
+**Important**: If you use `docker run` with `--rm` flag, the container will be **removed** instead of restarted. Remove `--rm` if you want automatic restarts.
+
+### Restart Policies
+
+| Policy | Description |
+|--------|-------------|
+| `no` | Do not automatically restart (default) |
+| `on-failure` | Restart only if container exits with error |
+| `always` | Always restart, even after manual stop |
+| `unless-stopped` | Always restart unless manually stopped (recommended) |
+
+
 
 ## Docker Commands
 
