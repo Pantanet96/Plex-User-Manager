@@ -37,7 +37,34 @@ A modern web application for managing Plex library sharing with scheduled access
 - Plex Pass (required for sharing libraries)
 - Plex Authentication Token ([How to find your token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/))
 
-## Installation
+**OR**
+
+- Docker and Docker Compose (for containerized deployment)
+
+## Deployment Options
+
+### Option 1: Docker (Recommended) 🐳
+
+The easiest way to deploy is using Docker:
+
+```bash
+# Clone repository
+git clone https://github.com/Pantanet96/Plex-User-Manager.git
+cd Plex-User-Manager
+
+# Create and configure environment
+cp .env.example .env
+nano .env  # Edit with your settings
+
+# Start container
+docker-compose up -d
+```
+
+Access at `http://localhost:5000` and login with `admin` / `admin`
+
+📖 **Full Docker documentation**: See [DOCKER.md](DOCKER.md) for detailed instructions, environment variables, and troubleshooting.
+
+### Option 2: Manual Installation
 
 1. **Clone the repository**
    ```bash

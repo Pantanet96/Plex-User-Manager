@@ -38,3 +38,16 @@ inspect_*.py
 cleanup_*.py
 check_methods.py
 auto_cleanup.py
+
+# Docker
+.env
+.env.local
+data/
+*.db-journal
+
+# SSL Certificates
+certs/
+*.pem
+*.key
+*.crt
+!.gitkeep

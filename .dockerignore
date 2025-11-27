@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Database (will be in volume)
+*.db
+*.db-journal
+instance/
+
+# Logs (will be in volume)
+*.log
+logs/
+
+# SSL Certificates (will be in volume)
+certs/
+*.pem
+*.key
+*.crt
+
+# Environment
+.env
+.env.local
+
+# Git
+.git/
+.gitignore
+
+# Documentation (keep in image)
+!README.md
+!LICENSE
+
+# Tests (optional - uncomment to exclude from image)
+# tests/
+# .pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data directory (mounted as volume)
+data/
