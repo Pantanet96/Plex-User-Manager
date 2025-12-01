@@ -8,6 +8,8 @@ A modern web application for managing Plex library sharing with scheduled access
 ![Flask](https://img.shields.io/badge/flask-3.0+-green.svg)
 ![Status](https://img.shields.io/badge/status-alpha-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Docker Pulls](https://img.shields.io/docker/pulls/pantanet96/plex-user-manager.svg)
+![Docker Image Size](https://img.shields.io/docker/image-size/pantanet96/plex-user-manager/latest.svg)
 
 ## Features
 
@@ -45,7 +47,33 @@ A modern web application for managing Plex library sharing with scheduled access
 
 ### Option 1: Docker (Recommended) 🐳
 
-The easiest way to deploy is using Docker:
+#### Quick Start with Pre-built Images
+
+Pull and run the latest image from Docker Hub:
+
+```bash
+docker run -d \
+  -p 5000:5000 \
+  -v ./data:/app/instance \
+  -e SECRET_KEY=your-secret-key-here \
+  --name plex-manager \
+  pantanet96/plex-user-manager:latest
+```
+
+Or from GitHub Container Registry:
+
+```bash
+docker run -d \
+  -p 5000:5000 \
+  -v ./data:/app/instance \
+  -e SECRET_KEY=your-secret-key-here \
+  --name plex-manager \
+  ghcr.io/pantanet96/plex-user-manager:latest
+```
+
+#### Full Setup with Docker Compose
+
+For production deployment with all features:
 
 ```bash
 # Clone repository
