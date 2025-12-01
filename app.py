@@ -40,7 +40,9 @@ app.logger.addHandler(app_handler)
 app.logger.addHandler(error_handler)
 app.logger.setLevel(logging.INFO)
 
-app.config['SECRET_KEY'] = 'your_secret_key_here' # TODO: Change this to a secure random key
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'INSECURE-CHANGE-ME-IN-PRODUCTION')
+if app.config['SECRET_KEY'] == 'INSECURE-CHANGE-ME-IN-PRODUCTION':
+    app.logger.warning('⚠️  Using default SECRET_KEY! Set SECRET_KEY environment variable for production!')
 # Use absolute path for database to ensure persistence in Docker
 db_path = os.environ.get('DATABASE_PATH', '/app/instance/plex_manager.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
