@@ -30,7 +30,13 @@ A modern web application for managing Plex library sharing with scheduled access
 
 ## Screenshots
 
-*Coming soon*
+### Dashboard
+![Dashboard](https://raw.githubusercontent.com/Pantanet96/Plex-User-Manager/main/docs/screenshots/dashboard.png)
+*Main dashboard showing user list with quick access to manage library permissions*
+
+### Manage Library Access
+![Manage Access](https://raw.githubusercontent.com/Pantanet96/Plex-User-Manager/main/docs/screenshots/manage-access.png)
+*Library access management with scheduled start and expiration dates*
 
 ## Prerequisites
 
