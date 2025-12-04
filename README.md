@@ -1,363 +1,125 @@
-# Plex User Library Management
+# Plex User Manager
 
-⚠️ **ALPHA VERSION** - This software is in early development and may contain bugs. Use at your own risk.
+⚠️ **ALPHA VERSION** - This software is in early development.
 
-A modern web application for managing Plex library sharing with scheduled access control and expiration dates.
+**Plex User Manager** is a powerful web application designed to give you granular control over your Plex users' access. It allows you to schedule when users can access specific libraries, automatically granting or revoking permissions based on your rules.
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Flask](https://img.shields.io/badge/flask-3.0+-green.svg)
-![Status](https://img.shields.io/badge/status-alpha-orange.svg)
+![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Docker Pulls](https://img.shields.io/docker/pulls/pantanet96/plex-user-manager.svg)
-![Docker Image Size](https://img.shields.io/docker/image-size/pantanet96/plex-user-manager/latest.svg)
 
-## Features
+---
 
-- 🎯 **Manual Library Sharing**: Easily manage which libraries each user can access
-- ⏰ **Scheduled Access**: Set start and expiration dates for library access
-- 🔄 **Automatic Sync**: Import users and libraries from your Plex server
-- 📅 **Configurable Scheduler**: Customize scheduler frequency (5 minutes to daily) or run at specific times
-- 📝 **Log Management**: Real-time log viewing with filtering, auto-refresh, and download capabilities
-- 🎨 **Modern UI**: Beautiful dark theme with glassmorphism effects
-- 🔐 **Local Authentication**: Secure admin login with password change functionality
-- 🔑 **Password Visibility Toggle**: Show/hide passwords with SVG eye icons
-- 📊 **Real-time Updates**: Changes are immediately reflected on Plex
-- 🛡️ **Default Library Protection**: Prevents user removal by maintaining a default library assignment
-- 👥 **Role-Based Access Control**: Multi-user support with Admin, Moderator, and Auditor roles
-- ⚙️ **Server Configuration**: Customize port and enable HTTPS with self-signed or custom certificates
-- 🔄 **One-Click Restart**: Restart server from UI (Docker-ready with exit code 1)
+## 🚀 Key Features
 
+### 🛡️ Advanced Access Control
+- **Granular Library Sharing**: Select exactly which libraries each user can access.
+- **Scheduled Access**: Set **Start Dates** and **Expiration Dates** for temporary access.
+- **Auto-Revocation**: Access is automatically removed when the expiration date is reached.
+- **Default Library Protection**: Ensures users are never accidentally removed from the server by keeping a default library assigned.
 
-## Screenshots
+### 🤖 Automation & Sync
+- **Automatic Plex Sync**: Seamlessly imports users and libraries from your Plex server.
+- **Background Scheduler**: Runs periodically (configurable from 5 minutes to daily) to enforce access rules.
+- **Real-time Updates**: Changes made in the app are immediately pushed to Plex.
+
+### ⚙️ Management & Monitoring
+- **Role-Based Access**:
+  - **Admin**: Full system control.
+  - **Moderator**: Manage user access and libraries.
+  - **Auditor**: Read-only view of logs and status.
+- **Live Logs**: View, filter, and download application logs directly from the UI.
+- **Server Control**: Restart the application and configure network settings (Port, HTTPS) from the dashboard.
+
+### 🎨 Modern Experience
+- **Beautiful UI**: Dark mode interface with glassmorphism design.
+- **Secure**: Local authentication with password complexity enforcement.
+
+---
+
+## 📸 Screenshots
 
 ### Dashboard
+Overview of all users and their current status.
 ![Dashboard](https://raw.githubusercontent.com/Pantanet96/Plex-User-Manager/main/docs/screenshots/dashboard.png)
-*Main dashboard showing user list with quick access to manage library permissions*
 
-### Manage Library Access
+### Access Management
+Easily configure which libraries a user can access and for how long.
 ![Manage Access](https://raw.githubusercontent.com/Pantanet96/Plex-User-Manager/main/docs/screenshots/manage-access.png)
-*Library access management with scheduled start and expiration dates*
 
-## Prerequisites
+---
 
-- Python 3.8 or higher
-- A Plex Media Server
-- Plex Pass (required for sharing libraries)
-- Plex Authentication Token ([How to find your token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/))
+## 🛠️ Installation & Setup
 
-**OR**
+### 🐳 Docker (Recommended)
 
-- Docker and Docker Compose (for containerized deployment)
+The easiest way to run Plex User Manager is with Docker.
 
-## Deployment Options
+1. **Run the container**:
+   ```bash
+   docker run -d \
+     -p 5000:5000 \
+     -v ./data:/app/instance \
+     -e SECRET_KEY=change-me-in-production \
+     --name plex-manager \
+     pantanet96/plex-user-manager:latest
+   ```
 
-### Option 1: Docker (Recommended) 🐳
+2. **Access the UI**: Open `http://localhost:5000`
+3. **Default Credentials**: `admin` / `admin` (Change immediately!)
 
-#### Quick Start with Pre-built Images
+👉 **[View Detailed Docker Guide](DOCKER.md)** for Compose setups, environment variables, and troubleshooting.
 
-Pull and run the latest image from Docker Hub:
+### 🐍 Manual Installation (Python)
 
-```bash
-docker run -d \
-  -p 5000:5000 \
-  -v ./data:/app/instance \
-  -e SECRET_KEY=your-secret-key-here \
-  --name plex-manager \
-  pantanet96/plex-user-manager:latest
-```
-
-Or from GitHub Container Registry:
-
-```bash
-docker run -d \
-  -p 5000:5000 \
-  -v ./data:/app/instance \
-  -e SECRET_KEY=your-secret-key-here \
-  --name plex-manager \
-  ghcr.io/pantanet96/plex-user-manager:latest
-```
-
-#### Full Setup with Docker Compose
-
-For production deployment with all features:
-
-```bash
-# Clone repository
-git clone https://github.com/Pantanet96/Plex-User-Manager.git
-cd Plex-User-Manager
-
-# Copy configuration templates
-cp docker-compose.example.yml docker-compose.yml
-cp .env.example .env
-
-# Edit with your settings
-nano .env  # or use your preferred editor
-nano docker-compose.yml  # optional: customize volumes, ports, etc.
-
-# Start container
-docker-compose up -d
-```
-
-Access at `http://localhost:5000` and login with `admin` / `admin`
-
-📖 **Full Docker documentation**: See [DOCKER.md](DOCKER.md) for detailed instructions, environment variables, and troubleshooting.
-
-### Option 2: Manual Installation
-
-1. **Clone the repository**
+1. Clone the repo and install dependencies:
    ```bash
    git clone https://github.com/Pantanet96/Plex-User-Manager.git
    cd Plex-User-Manager
-   ```
-
-2. **Create a virtual environment**
-   ```bash
-   python -m venv venv
-   ```
-
-3. **Activate the virtual environment**
-   - Windows:
-     ```bash
-     venv\Scripts\activate
-     ```
-   - Linux/Mac:
-     ```bash
-     source venv/bin/activate
-     ```
-
-4. **Install dependencies**
-   ```bash
    pip install -r requirements.txt
    ```
-
-5. **Initialize the database**
+2. Initialize the database:
    ```bash
    python init_db.py
    ```
-   This creates the SQLite database and default users.
-
-## Configuration
-
-1. **Start the application**
+3. Run the app:
    ```bash
    python app.py
    ```
 
-2. **Access the web interface**
-   - Open your browser and navigate to `http://127.0.0.1:5000`
-   - Login with default credentials:
-     - **Username**: `admin`
-     - **Password**: `admin`
-     - **Role**: Admin
-   - ⚠️ **Change the default password immediately after first login!**
+---
 
-3. **Configure Plex settings**
-   - Go to Settings
-   - Enter your Plex Server URL (e.g., `http://192.168.1.100:32400`)
-   - Enter your Plex Authentication Token
-   - Click "Save Settings"
+## 📖 User Guide
 
-4. **Sync with Plex**
-   - Go to Dashboard
-   - Click "Sync with Plex" to import users and libraries
+### 1. Initial Configuration
+1. Log in with `admin` / `admin`.
+2. Go to **Settings**.
+3. Enter your **Plex Server URL** (e.g., `http://192.168.1.100:32400`) and **Plex Token**.
+4. Save Settings.
 
-## Multi-User & Roles
+### 2. Syncing Users
+1. Go to the **Dashboard**.
+2. Click **Sync with Plex**. This will pull all your current Plex users and libraries into the local database.
 
-The application supports three distinct user roles:
+### 3. Managing Access
+1. On the Dashboard, click **Manage Access** for a user.
+2. Check the libraries you want them to access.
+3. (Optional) Set a **Start Date** if you want access to begin in the future.
+4. (Optional) Set an **Expiration Date** if you want access to end automatically.
+5. Click **Save Changes**.
 
-1. **Admin** 🔴
-   - Full access to all features
-   - Manage application settings (Plex connection, Scheduler)
-   - Manage users (Create, Edit, Delete)
-   - View and download logs
-
-2. **Moderator** 🔵
-   - Manage Plex libraries and user access
-   - Sync with Plex
-   - Cannot access Settings or User Management
-
-3. **Auditor** ⚪
-   - Read-only access to Dashboard and Logs
-   - Cannot make any changes
-
-## Usage
-
-### Managing User Access
-
-1. Click on "Manage Access" for any user in the dashboard
-2. Select which libraries the user should have access to
-3. Optionally set start and expiration dates
-4. Click "Save Changes"
-
-**Note**: The "Default" library is always assigned and cannot be removed to prevent user removal from the server.
-
-### Scheduled Access
-
-- Set a **Start Date** to grant access beginning at a specific time
-- Set an **Expiration Date** to automatically revoke access after a certain date
-- Leave dates empty for immediate and permanent access
-- The background scheduler automatically applies date-based changes
-
-### Scheduler Configuration
-
-You can customize how often the scheduler runs:
-
-1. Go to **Settings**
-2. Scroll to **Scheduler Configuration**
-3. Choose between two modes:
-   - **Interval Mode**: Run every X minutes (5-1440 minutes)
-   - **Daily Mode**: Run once per day at a specific time (e.g., 03:00)
-4. Click **Save Settings**
-
-The scheduler will automatically reconfigure without requiring an app restart.
-
-### Manual Scheduler Trigger
-
-
-For testing purposes, you can manually trigger the scheduler:
-1. Go to Settings
-2. Scroll to "Debug Tools"
-3. Click "Run Scheduler Now"
-
-### Log Management
-
-View and monitor application logs directly from the Settings page:
-
-1. Go to **Settings**
-2. Scroll to **Application Logs**
-3. Select log file:
-   - **Application Logs**: All application activity (INFO, WARNING, ERROR)
-   - **Error Logs**: Only error messages
-4. Filter by log level (DEBUG, INFO, WARNING, ERROR)
-5. Adjust number of lines to display (10-1000)
-6. Enable/disable auto-refresh (updates every 5 seconds)
-7. Download complete log files for offline analysis
-
-**Log Rotation**: Log files are automatically rotated when they reach 10MB, keeping the last 5 backup files (50MB total per log type).
-
-### Server Configuration
-
-Configure server port and HTTPS settings from the Settings page:
-
-1. Go to **Settings**
-2. Scroll to **Server Configuration**
-3. Configure options:
-   - **Server Port**: Change the default port (5000) to any port between 1024-65535
-   - **Enable HTTPS**: Toggle HTTPS support
-   - **SSL Certificate Type**:
-     - **Self-signed**: Automatically generates a self-signed certificate (for development/testing)
-     - **Custom Certificate**: Upload your own `.crt` and `.key` files (for production)
-4. Click **Save Server Settings**
-5. Click **Restart Server** to apply changes
-
-**Important Notes**:
-- Port and HTTPS changes require a server restart to take effect
-- Self-signed certificates will show browser warnings (normal for development)
-- For production, use valid SSL certificates from a trusted CA
-- In Docker deployments, the restart button triggers a container restart (requires `restart: unless-stopped` policy)
-
-## Security Considerations
-
-⚠️ **Important**: Before deploying to production:
-
-1. **Change the default admin password**
-   - The default credentials (`admin`/`admin`) should be changed immediately
-   - New passwords must meet security requirements:
-     - Minimum 8 characters
-     - At least one uppercase letter (A-Z)
-     - At least one number (0-9)
-     - At least one special character (!@#$%^&*(),.?":{}|<>_-+=[]\/;~`)
-
-2. **Update the SECRET_KEY**
-   - In `app.py`, replace `your_secret_key_here` with a secure random key:
-     ```python
-     import secrets
-     print(secrets.token_hex(32))
-     ```
-
-3. **SSL/TLS Configuration**
-   - The application currently disables SSL verification for Plex connections
-   - For production, implement proper SSL certificate handling
-
-4. **Use a production WSGI server**
-   - Don't use Flask's development server in production
-   - Consider using Gunicorn, uWSGI, or similar
-
-## Project Structure
-
-```
-Plex-User-Manager/
-├── app.py                 # Main Flask application
-├── models.py              # Database models
-├── database.py            # Database initialization
-├── plex_service.py        # Plex API integration
-├── ssl_utils.py           # SSL certificate generation utilities
-├── init_db.py             # Database setup script
-├── requirements.txt       # Python dependencies
-├── LICENSE                # MIT License
-├── static/
-│   └── style.css          # Application styling
-├── templates/
-│   ├── base.html          # Base template
-│   ├── login.html         # Login page
-│   ├── dashboard.html     # Main dashboard
-│   ├── settings.html      # Settings page
-│   ├── users.html         # User management page
-│   └── user_details.html  # User access management page
-└── tests/
-    ├── __init__.py        # Tests package
-    ├── test_models.py     # Model unit tests
-    ├── test_auth.py       # Authentication tests
-    └── README.md          # Test documentation
-```
-
-## Technologies Used
-
-- **Backend**: Flask, Flask-SQLAlchemy, Flask-Login
-- **Database**: SQLite
-- **Scheduler**: APScheduler
-- **Plex Integration**: PlexAPI
-- **Frontend**: HTML, CSS (Glassmorphism design), Vanilla JavaScript
-
-## Troubleshooting
-
-### Plex Connection Issues
-
-If you encounter SSL certificate errors:
-- The application is configured to bypass SSL verification for local Plex servers
-- Check that your Plex Server URL and Token are correct in Settings
-
-### Scheduler Not Running
-
-- Check the countdown timer on the dashboard
-- Manually trigger the scheduler from Settings > Debug Tools
-- Check `app.log` for error messages
-
-### Database Issues
-
-If you need to reset the database:
-```bash
-rm plex_manager.db
-python init_db.py
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Built with [PlexAPI](https://github.com/pkkid/python-plexapi)
-- Inspired by the need for better Plex library management
-
-## Support
-
-If you encounter any issues or have questions, please open an issue on GitHub.
+### 4. Scheduler Settings
+By default, the scheduler runs every hour. You can change this in **Settings** > **Scheduler Configuration**:
+- **Interval Mode**: Run every X minutes.
+- **Daily Mode**: Run once a day at a specific time.
 
 ---
 
-**Note**: This application is not affiliated with or endorsed by Plex Inc.
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
+
+## 📄 License
+
+This project is licensed under the MIT License.
